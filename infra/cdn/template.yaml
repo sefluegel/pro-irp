@@ -1,0 +1,7 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFront distribution for Pro IRP frontend
+Resources:
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties: {}
