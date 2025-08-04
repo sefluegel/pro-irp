@@ -1,8 +1,13 @@
 [build]
+  # Change into your frontend folder first
   base    = "frontend"
+  # Install & build your real React app
   command = "npm install && npm run build"
-  publish = "frontend/build"
+  # Now publish from frontend/build (so relative to base, it's "build")
+  publish = "build"
 
 [build.environment]
-  NODE_VERSION = "22"                   # match your package.json‘s engines: "22.x"
-  NODE_OPTIONS = "--openssl-legacy-provider"  # re-enable Webpack’s crypto
+  # Use Node 18 LTS so Webpack’s crypto works
+  NODE_VERSION   = "18"
+  # Enable legacy OpenSSL algorithms
+  NODE_OPTIONS   = "--openssl-legacy-provider"
