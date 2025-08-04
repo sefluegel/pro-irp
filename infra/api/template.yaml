@@ -1,0 +1,8 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: API Gateway and Lambda for Pro IRP
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
