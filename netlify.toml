@@ -6,4 +6,3 @@
 [build.environment]
   NODE_VERSION = "22"                   # match your package.json‘s engines: "22.x"
   NODE_OPTIONS = "--openssl-legacy-provider"  # re-enable Webpack’s crypto
-
