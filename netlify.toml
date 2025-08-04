@@ -1,0 +1,11 @@
+[build]
+  # Run your build from the frontend folder:
+  base    = "frontend"
+  command = "npm install && npm run build"
+  publish = "frontend/build"
+
+[build.environment]
+  # Force Netlify to use Node 18.x
+  NODE_VERSION = "18"
+  # Re-enable legacy OpenSSL hashes for Webpack
+  NODE_OPTIONS = "--openssl-legacy-provider"
