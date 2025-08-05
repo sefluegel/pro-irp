@@ -3,7 +3,7 @@
 [build]
   base      = "frontend"
   command   = "npm install && npm run build"
-  publish   = "frontend/build"
+  publish   = "build"                 # <— serve frontend/build
   functions = "backend/handlers"
 
 [build.environment]
