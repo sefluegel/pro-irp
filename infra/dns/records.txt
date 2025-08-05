@@ -1,3 +1,0 @@
-
-# Route 53 DNS records for proirp.com
-A proirp.com -> CloudFrontDistributionDomainName
