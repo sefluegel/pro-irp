@@ -1,12 +1,10 @@
-
 {
   "name": "pro-irp-frontend",
   "version": "1.0.0",
   "homepage": ".",
-"engines": {
-  "node": "22.x"
-},
-
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build"
