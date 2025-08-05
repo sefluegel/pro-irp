@@ -1,0 +1,13 @@
+# netlify.toml
+[build]
+  base    = "frontend"
+  command = "npm install && npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_OPTIONS = "--openssl-legacy-provider"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
