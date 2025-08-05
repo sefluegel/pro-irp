@@ -1,0 +1,27 @@
+name: 🤖 Sync AI code into staging
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v3
+        with:
+          ref: staging
+          token: ${{ secrets.MACHINE_USER_PAT }}
+
+      - name: Add AI source remote
+        run: |
+          git remote add ai-source https://github.com/assistant/pro-irp-ai.git
+          git fetch ai-source
+
+      - name: Merge AI code
+        run: |
+          git merge --no-ff ai-source/main -m "chore: merge AI code into staging"
+
+      - name: Push to staging
+        run: |
+          git push https://${{ secrets.MACHINE_USER_PAT }}@github.com/your-username/pro-irp.git staging
