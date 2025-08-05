@@ -1,13 +1,9 @@
 [build]
-  # Change into your frontend folder first
-  base    = "frontend"
-  # Install & build your real React app
-  command = "npm install && npm run build"
-  # Now publish from frontend/build (so relative to base, it's "build")
-  publish = "build"
+  command = "npm install && npm run build && serverless deploy"
+  functions = "backend/handlers"
+  publish = "frontend/build"
 
-[build.environment]
-  # Use Node 18 LTS so Webpack’s crypto works
-  NODE_VERSION   = "18"
-  # Enable legacy OpenSSL algorithms
-  NODE_OPTIONS   = "--openssl-legacy-provider"
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
