@@ -1,21 +1,37 @@
+# File: .github/workflows/ai-sync.yml
+name: 🤖 Sync ai-code → staging
+
+# Manually trigger via GitHub UI
+on:
+  workflow_dispatch:
+
 jobs:
-  sync:
+  ai_sync:
     runs-on: ubuntu-latest
+
     steps:
+      # 1. Check out the staging branch
       - name: Checkout staging
         uses: actions/checkout@v3
         with:
           ref: staging
           token: ${{ secrets.MACHINE_USER_PAT }}
 
-      - name: Fetch ai-code branch
+      # 2. Fetch your ai-code branch from this same repo
+      - name: Fetch ai-code
         run: |
           git fetch origin ai-code
 
+      # 3. Merge ai-code into staging
       - name: Merge ai-code into staging
         run: |
-          git merge --no-ff origin/ai-code -m "chore: merge ai-code into staging"
+          git merge --no-ff origin/ai-code -m "chore: merge ai-code → staging"
 
+      # 4. Push merged changes back to staging
       - name: Push to staging
         run: |
-          git push https://${{ secrets.MACHINE_USER_PAT }}@github.com/your-username/pro-irp.git staging
+          git push https://${{ secrets.MACHINE_USER_PAT }}@github.com/sefluegel/pro-irp.git staging
+
+      # 5. Success message
+      - name: Done
+        run: echo "✅ ai-code has been merged into staging"
