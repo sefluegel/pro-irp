@@ -1,9 +1,8 @@
 [build]
-  command = "npm install && npm run build && serverless deploy"
-  functions = "backend/handlers"
+  base    = "frontend"
+  command = "npm install && npm run build"
   publish = "frontend/build"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# If you have Netlify Functions, point functions directory here:
+# [build]
+#   functions = "backend/handlers"
