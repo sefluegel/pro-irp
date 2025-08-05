@@ -1,0 +1,30 @@
+name: 🏗️ Scaffold ai-code branch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout ai-code branch
+        uses: actions/checkout@v3
+        with:
+          ref: ai-code
+          token: ${{ secrets.MACHINE_USER_PAT }}
+
+      - name: Create folder structure
+        run: |
+          mkdir -p backend/handlers frontend/src infra
+          touch backend/handlers/.gitkeep frontend/src/.gitkeep infra/.gitkeep README.md
+
+      - name: Commit and push scaffold
+        env:
+          GITHUB_TOKEN: ${{ secrets.MACHINE_USER_PAT }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "bot@github-actions[bot].noreply"
+          git add .
+          git commit -m "chore: scaffold ai-code branch"
+          git push origin ai-code
