@@ -23,8 +23,8 @@ jobs:
           git fetch origin ai-code
 
       # 3. Merge ai-code into staging
-      - name: Merge ai-code into staging (allow unrelated histories)
-  run: |
+      name: Merge ai-code into staging (allow unrelated histories)
+      run: |
     git merge --no-ff origin/ai-code --allow-unrelated-histories -m "chore: merge ai-code → staging"
 
 
