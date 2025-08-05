@@ -1,8 +1,15 @@
-[build]
-  base    = "frontend"
-  command = "npm install && npm run build"
-  publish = "frontend/build"
+# netlify.toml
 
-# If you have Netlify Functions, point functions directory here:
-# [build]
-#   functions = "backend/handlers"
+[build]
+  base      = "frontend"
+  command   = "npm install && npm run build"
+  publish   = "frontend/build"
+  functions = "backend/handlers"
+
+[build.environment]
+  NODE_OPTIONS = "--openssl-legacy-provider"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
