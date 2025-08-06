@@ -13,6 +13,8 @@
     "lucide-react": "^0.244.0",
     "react-scripts": "^5.0.1",
     "bcryptjs": "^2.4.3"
+    "aws-sdk": "^2.1564.0"
+
   },
   "devDependencies": {
     "tailwindcss": "^3.3.0",
