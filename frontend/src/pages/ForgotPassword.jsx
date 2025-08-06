@@ -1,23 +1,35 @@
-import React, { useState } from 'react';
+import React from "react";
+import Logo from "../components/Logo";
+import { Link } from "react-router-dom";
 
-const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert(`Password reset link sent to ${email} (stub)`);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4">
-      <h2 className="text-xl font-bold mb-4">Forgot Password</h2>
-      <input type="email" placeholder="Enter your email"
-        value={email} onChange={e => setEmail(e.target.value)}
-        className="w-full mb-3 p-2 border" required />
-      <button type="submit" className="bg-gray-600 text-white px-4 py-2">
-        Send Reset Link
-      </button>
-    </form>
-  );
-};
+const ForgotPassword = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-blue-300 to-white">
+    <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full">
+      <Logo size={60} />
+      <h1 className="text-2xl font-extrabold text-center mb-6 text-blue-700 tracking-wide">
+        Reset your password
+      </h1>
+      <form>
+        <input
+          className="w-full p-3 rounded border mb-4 focus:outline-blue-500"
+          type="email"
+          placeholder="Enter your email"
+          required
+        />
+        <button
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-semibold text-lg shadow mt-2 transition"
+          type="submit"
+        >
+          Send reset link
+        </button>
+      </form>
+      <div className="flex justify-between mt-5 text-sm text-blue-600">
+        <Link to="/login" className="hover:underline font-semibold">
+          Back to log in
+        </Link>
+      </div>
+    </div>
+  </div>
+);
 
 export default ForgotPassword;
