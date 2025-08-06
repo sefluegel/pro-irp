@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Logo from "../components/Logo";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -24,12 +23,23 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-blue-300 to-white">
-      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full">
-        <Logo size={90} />
-        <h1 className="text-3xl font-extrabold text-center mb-8 mt-2 text-blue-700 tracking-wide">
-          Pro IRP
-        </h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-blue-300 to-white font-[Inter]">
+      <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full">
+        {/* Modern Branding Header */}
+        <div className="flex flex-col items-center pt-4 pb-6">
+          <img
+            src="/logo.png"
+            alt="Pro IRP Logo"
+            className="w-24 h-24 mb-4 rounded-full shadow"
+            style={{ objectFit: "contain", background: "#fff" }}
+          />
+          <h1 className="text-4xl font-extrabold text-blue-700 tracking-tight font-[Inter]">
+            Pro <span className="text-blue-400">IRP</span>
+          </h1>
+          <div className="mt-1 text-lg text-gray-500 font-medium tracking-wide">
+            Next Generation Insurance Retention
+          </div>
+        </div>
         <form onSubmit={handleSubmit}>
           {msg && <div className="text-center text-red-500 mb-3">{msg}</div>}
           <input
