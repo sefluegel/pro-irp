@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";   // <-- ADD THIS LINE
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -19,6 +20,7 @@ const Dashboard = () => (
 const App = () => (
   <AuthProvider>
     <Router>
+      <Header /> {/* <-- YOUR REAL HEADER */}
       <div style={{ display: "flex", minHeight: "100vh" }}>
         <Sidebar />
         <div style={{ flex: 1, background: "#f7f8fa", padding: "2rem" }}>
@@ -35,7 +37,6 @@ const App = () => (
                 </PrivateRoute>
               }
             />
-            {/* fallback 404 */}
             <Route path="*" element={<div>404 Not Found</div>} />
           </Routes>
         </div>
@@ -45,3 +46,4 @@ const App = () => (
 );
 
 export default App;
+
