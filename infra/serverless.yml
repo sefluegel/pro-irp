@@ -1,0 +1,23 @@
+service: proirp-auth
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  environment:
+    USERS_TABLE: ${env:USERS_TABLE}
+    JWT_SECRET: ${env:JWT_SECRET}
+
+functions:
+  signup:
+    handler: handlers/auth.signup
+    events:
+      - httpApi:
+          path: /signup
+          method: post
+
+  login:
+    handler: handlers/auth.login
+    events:
+      - httpApi:
+          path: /login
+          method: post
