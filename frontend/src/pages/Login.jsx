@@ -1,46 +1,72 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Logo from "../components/Logo";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
-  const [err, setErr] = useState('');
-  const { login } = useAuth();
-  const nav = useNavigate();
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [msg, setMsg] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    const res = await fetch('/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: pw })
-    });
-    if (res.ok) {
-      const { token } = await res.json();
-      login(token);
-      nav('/dashboard');
-    } else {
-      const { error } = await res.json();
-      setErr(error);
+    setMsg("");
+    // Fake success for demo
+    if (!email || !pw) {
+      setMsg("Enter email and password");
+      return;
     }
+    setMsg("Logging in...");
+    setTimeout(() => {
+      setMsg("");
+      navigate("/dashboard");
+    }, 800);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4">
-      <h2 className="text-xl font-bold mb-4">Log In</h2>
-      {err && <p className="text-red-600">{err}</p>}
-      <input type="email" placeholder="Email"
-        value={email} onChange={e => setEmail(e.target.value)}
-        className="w-full mb-3 p-2 border" required />
-      <input type="password" placeholder="Password"
-        value={pw} onChange={e => setPw(e.target.value)}
-        className="w-full mb-3 p-2 border" required />
-      <button type="submit" className="bg-blue-600 text-white px-4 py-2">Log In</button>
-      <div className="mt-2">
-        <Link to="/forgot" className="text-blue-500">Forgot Password?</Link>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-blue-300 to-white">
+      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full">
+        <Logo size={90} />
+        <h1 className="text-3xl font-extrabold text-center mb-8 mt-2 text-blue-700 tracking-wide">
+          Pro IRP
+        </h1>
+        <form onSubmit={handleSubmit}>
+          {msg && <div className="text-center text-red-500 mb-3">{msg}</div>}
+          <input
+            className="w-full p-3 rounded border mb-4 focus:outline-blue-500"
+            type="email"
+            placeholder="Email"
+            value={email}
+            autoComplete="username"
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+          <input
+            className="w-full p-3 rounded border mb-4 focus:outline-blue-500"
+            type="password"
+            placeholder="Password"
+            value={pw}
+            autoComplete="current-password"
+            onChange={e => setPw(e.target.value)}
+            required
+          />
+          <button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-semibold text-lg shadow mt-2 transition"
+            type="submit"
+          >
+            Log In
+          </button>
+        </form>
+        <div className="flex justify-between mt-5 text-sm text-blue-600">
+          <Link to="/signup" className="hover:underline font-semibold">
+            Sign up
+          </Link>
+          <Link to="/forgot" className="hover:underline font-semibold">
+            Forgot password?
+          </Link>
+        </div>
       </div>
-    </form>
+    </div>
   );
 };
 
