@@ -21,7 +21,22 @@ const Sidebar = () => (
             Dashboard
           </Link>
         </li>
-        {/* more links */}
+        <li>
+          <Link
+            to="/signup"
+            className="block text-gray-700 hover:text-green-600 transition"
+          >
+            Sign Up
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/login"
+            className="block text-gray-700 hover:text-green-600 transition"
+          >
+            Log In
+          </Link>
+        </li>
       </ul>
     </nav>
   </aside>
