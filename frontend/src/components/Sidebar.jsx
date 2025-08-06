@@ -1,11 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LogIn, UserPlus, KeyRound, LayoutDashboard } from "lucide-react";
+import { LogIn, UserPlus, LayoutDashboard } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Login", icon: <LogIn size={20} /> },
   { to: "/signup", label: "Sign Up", icon: <UserPlus size={20} /> },
-  { to: "/forgot", label: "Forgot Password", icon: <KeyRound size={20} /> },
   { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
 ];
 
