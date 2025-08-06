@@ -23,22 +23,42 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen" style={{
-      background: "linear-gradient(135deg, #376FDB 0%, #8FD0FF 100%)"
-    }}>
-      <div className="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full border-t-8" style={{ borderTopColor: "#FFB800", borderTopWidth: "8px" }}>
+    <div
+      className="flex flex-col items-center justify-center min-h-screen"
+      style={{
+        background: "linear-gradient(120deg, #1a3150 0%, #20344A 40%, #007cf0 100%)",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div
+        className="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full border-t-8"
+        style={{
+          borderTopColor: "#FFB800",
+          borderTopWidth: "8px",
+        }}
+      >
         {/* Modern Branding Header */}
         <div className="flex flex-col items-center pt-2 pb-6">
           <img
             src="/logo.png"
             alt="Pro IRP Logo"
-            className="w-28 h-28 mb-4 rounded-full shadow"
-            style={{ objectFit: "contain", background: "#fff" }}
+            className="w-28 h-28 mb-4 rounded-full shadow bg-white"
+            style={{ objectFit: "contain" }}
           />
-          <h1 className="text-4xl font-extrabold tracking-tight font-[Inter]" style={{ color: "#172A3A" }}>
+          <h1
+            className="text-4xl font-extrabold tracking-tight font-[Inter]"
+            style={{ color: "#172A3A" }}
+          >
             Pro <span style={{ color: "#FFB800" }}>IRP</span>
           </h1>
-          <div className="mt-1 text-lg" style={{ color: "#20344A", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>
+          <div
+            className="mt-1 text-lg"
+            style={{
+              color: "#20344A",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 500,
+            }}
+          >
             Next Generation Insurance Retention
           </div>
         </div>
