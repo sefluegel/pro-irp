@@ -1,54 +1,101 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import Logo from "../components/Logo";
+import { Link, useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [msg, setMsg] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = async e => {
+  // Demo: Allow signup even if fields are blank
+  const handleSubmit = e => {
     e.preventDefault();
-    setMsg("");
-    setMsg("Signup not active in demo mode.");
+    setMsg("Creating account...");
+    setTimeout(() => {
+      setMsg("");
+      navigate("/dashboard");
+    }, 700);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-blue-300 to-white">
-      <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full">
-        <Logo size={70} />
-        <h1 className="text-2xl font-extrabold text-center mb-6 text-blue-700 tracking-wide">
-          Create Your Account
-        </h1>
+    <div
+      className="flex flex-col items-center justify-center min-h-screen"
+      style={{
+        background: "linear-gradient(120deg, #1a3150 0%, #20344A 40%, #007cf0 100%)",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div
+        className="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full border-t-8"
+        style={{
+          borderTopColor: "#FFB800",
+          borderTopWidth: "8px",
+        }}
+      >
+        <div className="flex flex-col items-center pt-2 pb-6">
+          <img
+            src="/logo.png"
+            alt="Pro IRP Logo"
+            className="w-28 h-28 mb-4 rounded-full shadow bg-white"
+            style={{ objectFit: "contain" }}
+          />
+          <h1
+            className="text-3xl font-extrabold tracking-tight font-[Inter] mb-1"
+            style={{ color: "#172A3A" }}
+          >
+            Pro <span style={{ color: "#FFB800" }}>IRP</span>
+          </h1>
+          <div
+            className="text-lg"
+            style={{
+              color: "#20344A",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 500,
+            }}
+          >
+            Create your account
+          </div>
+        </div>
         <form onSubmit={handleSubmit}>
-          {msg && <div className="text-center text-red-500 mb-3">{msg}</div>}
+          {msg && <div className="text-center text-blue-600 mb-3">{msg}</div>}
           <input
-            className="w-full p-3 rounded border mb-4 focus:outline-blue-500"
+            className="w-full p-3 rounded border mb-4 focus:outline-[#172A3A] font-[Inter]"
             type="email"
             placeholder="Email"
             value={email}
             autoComplete="username"
             onChange={e => setEmail(e.target.value)}
-            required
           />
           <input
-            className="w-full p-3 rounded border mb-4 focus:outline-blue-500"
+            className="w-full p-3 rounded border mb-4 focus:outline-[#172A3A] font-[Inter]"
             type="password"
             placeholder="Password"
             value={pw}
             autoComplete="new-password"
             onChange={e => setPw(e.target.value)}
-            required
+          />
+          <input
+            className="w-full p-3 rounded border mb-4 focus:outline-[#172A3A] font-[Inter]"
+            type="password"
+            placeholder="Confirm Password"
+            value={confirm}
+            autoComplete="new-password"
+            onChange={e => setConfirm(e.target.value)}
           />
           <button
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded font-semibold text-lg shadow mt-2 transition"
+            className="w-full py-3 rounded font-semibold text-lg shadow mt-2 transition"
+            style={{
+              background: "#172A3A",
+              color: "#FFB800",
+            }}
             type="submit"
           >
-            Sign Up
+            Create Account
           </button>
         </form>
-        <div className="flex justify-between mt-5 text-sm text-blue-600">
-          <Link to="/login" className="hover:underline font-semibold">
+        <div className="flex justify-between mt-5 text-sm" style={{ color: "#172A3A" }}>
+          <Link to="/" className="hover:underline font-semibold">
             Already have an account? Log in
           </Link>
         </div>
