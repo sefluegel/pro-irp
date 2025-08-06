@@ -1,8 +1,8 @@
 [build]
   base = "frontend"
-  publish = "frontend/build"
+  publish = "build"
   command = "npm install && npm run build"
-  functions = "backend/handlers"
+  functions = "../backend/handlers"
 
 [build.environment]
   NODE_OPTIONS = "--openssl-legacy-provider"
