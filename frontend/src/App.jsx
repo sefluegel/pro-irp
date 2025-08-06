@@ -1,11 +1,17 @@
-import React from "react";
-
 const App = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 to-blue-300">
-    <h1 className="text-4xl font-bold text-white drop-shadow-lg">
-      Tailwind is working!
-    </h1>
-  </div>
+  <Router>
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      <Sidebar />
+      <div style={{ flex: 1 }}>
+        <Routes>
+          <Route path="/" element={<Login />} />   {/* Root now shows Login */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot" element={<ForgotPassword />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="*" element={<div>404 Not Found</div>} />
+        </Routes>
+      </div>
+    </div>
+  </Router>
 );
-
-export default App;
