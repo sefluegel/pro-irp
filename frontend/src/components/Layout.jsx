@@ -1,18 +1,14 @@
-// frontend/src/components/Layout.jsx
 import React from 'react';
 import Sidebar from './Sidebar';
+import Header from './Header';
 
 const Layout = ({ children }) => (
-  <div style={{ display: 'flex', minHeight: '100vh' }}>
-    {/* Sidebar on the left */}
-    <aside style={{ width: 240, background: '#f5f5f5', padding: '1rem' }}>
-      <Sidebar />
-    </aside>
-
-    {/* Main content area */}
-    <main style={{ flex: 1, padding: '2rem' }}>
-      {children}
-    </main>
+  <div className="flex min-h-screen bg-gray-100">
+    <Sidebar />
+    <div className="flex-1 flex flex-col">
+      <Header />
+      <main className="p-6 flex-1">{children}</main>
+    </div>
   </div>
 );
 
