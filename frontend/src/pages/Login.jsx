@@ -7,19 +7,14 @@ const Login = () => {
   const [msg, setMsg] = useState("");
   const navigate = useNavigate();
 
+  // Demo: Allow login even if fields are blank
   const handleSubmit = async e => {
     e.preventDefault();
-    setMsg("");
-    // Fake success for demo
-    if (!email || !pw) {
-      setMsg("Enter email and password");
-      return;
-    }
     setMsg("Logging in...");
     setTimeout(() => {
       setMsg("");
       navigate("/dashboard");
-    }, 800);
+    }, 600);
   };
 
   return (
@@ -71,7 +66,6 @@ const Login = () => {
             value={email}
             autoComplete="username"
             onChange={e => setEmail(e.target.value)}
-            required
           />
           <input
             className="w-full p-3 rounded border mb-4 focus:outline-[#172A3A] font-[Inter]"
@@ -80,7 +74,6 @@ const Login = () => {
             value={pw}
             autoComplete="current-password"
             onChange={e => setPw(e.target.value)}
-            required
           />
           <button
             className="w-full py-3 rounded font-semibold text-lg shadow mt-2 transition"
@@ -96,9 +89,6 @@ const Login = () => {
         <div className="flex justify-between mt-5 text-sm" style={{ color: "#172A3A" }}>
           <Link to="/signup" className="hover:underline font-semibold">
             Sign up
-          </Link>
-          <Link to="/forgot" className="hover:underline font-semibold">
-            Forgot password?
           </Link>
         </div>
       </div>
