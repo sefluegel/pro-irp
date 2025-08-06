@@ -1,22 +1,27 @@
-// frontend/src/App.jsx
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import PrivateRoute from "./components/PrivateRoute";
+import Sidebar from "./components/Sidebar";
+import Home from "./pages/Home";
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+// Example Dashboard page (replace with your real one)
+const Dashboard = () => (
+  <div>
+    <h2>Dashboard</h2>
+    <p>Protected dashboard content here.</p>
+  </div>
+);
 
-import Layout from './components/Layout';
-import Home from './pages/Home';
-import Signup from './pages/Signup';
-import Login from './pages/Login';
-import ForgotPassword from './pages/ForgotPassword';
-import Dashboard from './pages/Dashboard';
-import PrivateRoute from './components/PrivateRoute';
-
-function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Layout>
+const App = () => (
+  <AuthProvider>
+    <Router>
+      <div style={{ display: "flex", minHeight: "100vh" }}>
+        <Sidebar />
+        <div style={{ flex: 1, background: "#f7f8fa", padding: "2rem" }}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/signup" element={<Signup />} />
@@ -30,11 +35,13 @@ function App() {
                 </PrivateRoute>
               }
             />
+            {/* fallback 404 */}
+            <Route path="*" element={<div>404 Not Found</div>} />
           </Routes>
-        </Layout>
-      </Router>
-    </AuthProvider>
-  );
-}
+        </div>
+      </div>
+    </Router>
+  </AuthProvider>
+);
 
 export default App;
