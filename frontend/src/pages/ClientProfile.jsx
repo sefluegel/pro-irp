@@ -145,7 +145,6 @@ const ClientProfile = () => {
     return `${yearsPart} year${yearsPart !== 1 ? "s" : ""}, ${monthsPart} month${monthsPart !== 1 ? "s" : ""}`;
   })();
 
-  // --- Render ---
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 font-[Inter]">
       {/* Header with client info and Quick Actions */}
@@ -188,13 +187,19 @@ const ClientProfile = () => {
         </div>
       </div>
 
-      {/* Top Half: 3-Column Section */}
+      {/* Top Half: 2-Column Section */}
       <div className="grid md:grid-cols-2 gap-6 mb-6" style={{ minHeight: 260 }}>
         {/* Retention Risk Box (left half) */}
         <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-between min-h-[260px]">
           <div className="flex items-center gap-4 mb-3">
             {/* Only ClientRiskChart here, label & color handled in chart */}
             <ClientRiskChart score={client.riskScore} size={90} />
+            <div>
+              {/* Show only the score (optional, you can remove this too if you want only the chart) */}
+              <div className="text-gray-500 font-medium">
+                {/* (Score: {client.riskScore}) */}
+              </div>
+            </div>
           </div>
           <div className="text-gray-700 mb-2">{retentionDetail.explanation}</div>
           <div>
@@ -229,4 +234,70 @@ const ClientProfile = () => {
                     </div>
                   </div>
                   <button
-                    className="text-blue-600 font-semibold text-x
+                    className="text-blue-600 font-semibold text-xs hover:underline"
+                    onClick={() => alert("Open thread/newsletter (demo)")}
+                  >
+                    View
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Tasks Due */}
+          <div className="bg-white rounded-2xl shadow p-6 flex-1 flex flex-col min-h-[120px]">
+            <div className="font-bold mb-2 text-[#172A3A]">Tasks Due</div>
+            <ul className="space-y-2 text-sm">
+              {tasksDue.map((t, idx) => (
+                <li key={idx} className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    {t.type === "call" && <Phone size={16} className="text-green-600" />}
+                    {t.type === "sms" && <MessageCircle size={16} className="text-blue-500" />}
+                    {t.type === "calendar" && <CalendarClock size={16} className="text-purple-500" />}
+                    <div>
+                      <div className="font-medium">{t.text}</div>
+                      <div className="text-gray-400 text-xs">{t.due}</div>
+                    </div>
+                  </div>
+                  <button
+                    className="text-blue-600 font-semibold text-xs hover:underline"
+                    onClick={() => alert("Task completed (demo)")}
+                  >
+                    Complete
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Half: Client Detail Card (Full Width) */}
+      <ClientDetailCard client={client} />
+
+      {/* Modals */}
+      {showSms && (
+        <MessageThread
+          channel="sms"
+          thread={client.messages.sms}
+          onClose={() => setShowSms(false)}
+          unread={client.smsUnread}
+          clientName={client.name}
+        />
+      )}
+      {showEmail && (
+        <MessageThread
+          channel="email"
+          thread={client.messages.email}
+          onClose={() => setShowEmail(false)}
+          unread={client.emailUnread}
+          clientName={client.name}
+        />
+      )}
+      {showSchedule && (
+        <ClientScheduleModal onClose={() => setShowSchedule(false)} client={client} />
+      )}
+    </div>
+  );
+};
+
+export default ClientProfile;
