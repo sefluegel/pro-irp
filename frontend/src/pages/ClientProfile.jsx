@@ -184,4 +184,4 @@ const ClientProfile = () => {
             onClick={() => setShowSchedule(true)}
           >
             <CalendarClock size={18} /> Schedule Review
-          </butto
+          </button
