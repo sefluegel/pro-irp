@@ -1,6 +1,6 @@
 // /frontend/src/components/ClientDetailCard.jsx
 import React, { useState } from "react";
-import { Edit2, Save, X, Plus } from "lucide-react";
+import { Edit2, Save, X } from "lucide-react";
 
 const EditableField = ({
   label,
@@ -97,3 +97,102 @@ const ClientDetailCard = ({ client: origClient }) => {
           editing={!!editing.effectiveDate}
           setEditing={v => setEditing(e => ({ ...e, effectiveDate: v }))}
           onChange={v => handleChange("effectiveDate", v)}
+        />
+        <EditableField
+          label="🗣️ Preferred Language:"
+          value={client.preferredLanguage}
+          editing={!!editing.preferredLanguage}
+          setEditing={v => setEditing(e => ({ ...e, preferredLanguage: v }))}
+          onChange={v => handleChange("preferredLanguage", v)}
+        />
+        <EditableField
+          label="🏥 Carrier:"
+          value={client.carrier}
+          editing={!!editing.carrier}
+          setEditing={v => setEditing(e => ({ ...e, carrier: v }))}
+          onChange={v => handleChange("carrier", v)}
+        />
+        <EditableField
+          label="💳 Plan:"
+          value={client.plan}
+          editing={!!editing.plan}
+          setEditing={v => setEditing(e => ({ ...e, plan: v }))}
+          onChange={v => handleChange("plan", v)}
+        />
+        <EditableField
+          label="👨‍⚕️ Primary Care:"
+          value={client.primaryCare}
+          editing={!!editing.primaryCare}
+          setEditing={v => setEditing(e => ({ ...e, primaryCare: v }))}
+          onChange={v => handleChange("primaryCare", v)}
+        />
+        <EditableField
+          label="👩‍⚕️ Specialists:"
+          value={client.specialists}
+          editing={!!editing.specialists}
+          setEditing={v => setEditing(e => ({ ...e, specialists: v }))}
+          onChange={v => handleChange("specialists", v)}
+        />
+        <EditableField
+          label="💊 Medications:"
+          value={client.medications}
+          editing={!!editing.medications}
+          setEditing={v => setEditing(e => ({ ...e, medications: v }))}
+          onChange={v => handleChange("medications", v)}
+        />
+      </div>
+      {/* Right: Uploads, SOA, Policies */}
+      <div className="flex-1 space-y-3 text-lg">
+        <div>
+          <span className="font-bold">📄 SOA:</span>{" "}
+          {client.soa?.onFile
+            ? <span className="text-green-600 font-bold">On File ({client.soa.signed})</span>
+            : <span className="text-red-600">Missing</span>
+          }
+        </div>
+        <div>
+          <span className="font-bold">📄 Permission to Contact:</span>{" "}
+          {client.ptc?.onFile
+            ? <span className="text-green-600 font-bold">On File ({client.ptc.signed})</span>
+            : <span className="text-red-600">Missing</span>
+          }
+        </div>
+        <div>
+          <span className="font-bold">📝 Enrollment Form:</span>{" "}
+          {client.enrollment?.onFile
+            ? <span className="text-green-600 font-bold">On File</span>
+            : <span className="text-red-600">Missing</span>
+          }
+        </div>
+        <div>
+          <span className="font-bold">📚 Policies:</span>{" "}
+          {client.policies && client.policies.length
+            ? (
+              <ul className="list-disc ml-6">
+                {client.policies.map((p, i) =>
+                  <li key={i}>{p.carrier}: {p.plan} (Eff. {p.effective})</li>
+                )}
+              </ul>
+            )
+            : <span>No other policies.</span>
+          }
+        </div>
+        <div>
+          <span className="font-bold">📎 Uploaded Files:</span>{" "}
+          {client.uploads && client.uploads.length
+            ? (
+              <ul className="list-disc ml-6">
+                {client.uploads.map((f, i) =>
+                  <li key={i}>{f.label}: {f.file} ({f.date})</li>
+                )}
+              </ul>
+            )
+            : <span>No uploads.</span>
+          }
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ClientDetailCard;
