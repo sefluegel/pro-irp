@@ -45,4 +45,13 @@ const ClientScheduleModal = ({ onClose, client }) => {
             placeholder="Purpose, details..."
           />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={
+            <button type="button" onClick={onClose} className="bg-gray-200 px-4 py-2 rounded-xl text-gray-700 font-bold hover:bg-gray-300 transition">Cancel</button>
+            <button type="submit" className="bg-[#FFB800] px-5 py-2 rounded-xl text-[#172A3A] font-bold hover:bg-yellow-400 transition">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default ClientScheduleModal;
