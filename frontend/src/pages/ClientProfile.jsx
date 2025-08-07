@@ -128,22 +128,6 @@ const tasksDue = [
   },
 ];
 
-const getRiskText = score => {
-  if (score > 85) return "Extremely High Risk";
-  if (score > 75) return "High Risk";
-  if (score > 50) return "Moderately High Risk";
-  if (score > 25) return "Moderate Risk";
-  return "Low Risk";
-};
-
-const getRiskColor = score => {
-  if (score > 85) return "text-red-600";
-  if (score > 75) return "text-orange-500";
-  if (score > 50) return "text-yellow-500";
-  if (score > 25) return "text-blue-600";
-  return "text-green-600";
-};
-
 const ClientProfile = () => {
   const [client] = useState(MOCK_CLIENT);
   const [showSms, setShowSms] = useState(false);
@@ -209,11 +193,10 @@ const ClientProfile = () => {
         {/* Retention Risk Box (left half) */}
         <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-between min-h-[260px]">
           <div className="flex items-center gap-4 mb-3">
+            {/* Only ClientRiskChart here, label & color handled in chart */}
             <ClientRiskChart score={client.riskScore} size={90} />
             <div>
-              <div className={`text-xl font-bold ${getRiskColor(client.riskScore)}`}>
-                {getRiskText(client.riskScore)}
-              </div>
+              {/* No extra risk label! Only show score, optional details */}
               <div className="text-gray-500 font-medium">
                 (Score: {client.riskScore})
               </div>
