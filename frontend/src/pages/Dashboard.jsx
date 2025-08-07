@@ -1,3 +1,4 @@
+// /frontend/src/pages/Dashboard.jsx
 import React from "react";
 import DashboardHeader from "../components/DashboardHeader";
 import MetricCards from "../components/MetricCards";
@@ -10,15 +11,16 @@ import AlertsWidget from "../components/AlertsWidget";
 import QuickLookup from "../components/QuickLookup";
 import SectionLinks from "../components/SectionLinks";
 
-// If you have a custom ActionBar, remove any references to Broadcast/Policy Review inside it as well!
+// ---- Remove "Broadcast" and "Policy Review" from ActionBar and/or SectionLinks if needed ----
 
 const Dashboard = () => (
   <div className="min-h-screen bg-gray-100 py-8 px-4" style={{ fontFamily: "Inter, sans-serif" }}>
     <DashboardHeader />
     <div className="max-w-7xl mx-auto space-y-8">
       <MetricCards />
-      {/* ActionBar should NOT include Broadcast/Policy Review now */}
-      <ActionBar /> 
+      {/* If your ActionBar or SectionLinks contained "Broadcast" or "Policy Review", 
+          make sure those buttons/links are removed from those components too */}
+      <ActionBar />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">
           <RetentionCharts />
