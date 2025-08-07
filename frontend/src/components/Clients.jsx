@@ -302,15 +302,16 @@ const Clients = () => {
                       {c.tags.length === 0 ? (
                         <span className="text-gray-300">—</span>
                       ) : (
-                      {c.tags.length === 0 ? <span className="text-gray-300">—</span> : c.tags.map(tag => (
-  <span
-    key={tag}
-    className={`px-2 py-0.5 rounded-full text-xs font-bold ${TAG_COLORS[tag] || "bg-gray-100 text-gray-500"}`}
-  >
-    {tag}
-  </span>
-))}
-
+                        c.tags.map(tag => (
+                          <span
+                            key={tag}
+                            className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                              TAG_COLORS[tag] || "bg-gray-100 text-gray-500"
+                            }`}
+                          >
+                            {tag}
+                          </span>
+                        ))
                       )}
                     </div>
                   </td>
