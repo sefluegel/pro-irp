@@ -4,8 +4,6 @@ import React, { useState, useEffect } from "react";
 const ISO_LANGUAGES = [
   { code: "en", name: "English" },
   { code: "es", name: "Spanish" },
-  { code: "fr", name: "French" },
-  { code: "vi", name: "Vietnamese" },
 ];
 const STATES = ["KY", "OH", "IN", "FL", "PA", "TX", "GA", "TN"];
 
