@@ -9,9 +9,9 @@ import {
   Settings,
   LogIn,
   UserPlus,
-  Mail,
-  MessageSquare,
-  Bell
+  // Mail,
+  // MessageSquare,
+  // Bell
 } from "lucide-react";
 
 // Dummy unread counts for demo (replace with real props/state as needed)
@@ -24,7 +24,7 @@ const unread = {
 const Sidebar = () => {
   const location = useLocation();
 
-  // "Dashboard Mode" if on /dashboard or its subpages (e.g., /dashboard, /clients, /policies, etc.)
+  // "Dashboard Mode" if on /dashboard or its subpages
   const dashboardMode = [
     "/dashboard",
     "/clients",
@@ -36,23 +36,18 @@ const Sidebar = () => {
   // Links for dashboard (main app)
   const dashboardLinks = [
     { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-    { to: "/clients", label: "Clients", icon: <Users size={20} /> },
-    { to: "/policies", label: "Policies", icon: <FileText size={20} /> },
-    { to: "/tasks", label: "Tasks", icon: <ListChecks size={20} /> },
-    { to: "/settings", label: "Settings", icon: <Settings size={20} /> },
-    // Optional: Add alert/message/email navigation
-    // { to: "/messages", label: "Messages", icon: <MessageSquare size={20} />, badge: unread.messages },
-    // { to: "/emails", label: "Emails", icon: <Mail size={20} />, badge: unread.emails },
-    // { to: "/alerts", label: "Alerts", icon: <Bell size={20} />, badge: unread.alerts },
+    { to: "/clients",   label: "Clients",   icon: <Users size={20} /> },
+    { to: "/policies",  label: "Policies",  icon: <FileText size={20} /> },
+    { to: "/tasks",     label: "Tasks",     icon: <ListChecks size={20} /> },
+    { to: "/settings",  label: "Settings",  icon: <Settings size={20} /> },
   ];
 
   // Links for authentication pages
   const authLinks = [
-    { to: "/", label: "Login", icon: <LogIn size={20} /> },
-    { to: "/signup", label: "Sign Up", icon: <UserPlus size={20} /> },
+    { to: "/",        label: "Login",    icon: <LogIn size={20} /> },
+    { to: "/signup",  label: "Sign Up",  icon: <UserPlus size={20} /> },
   ];
 
-  // Pick the right set
   const links = dashboardMode ? dashboardLinks : authLinks;
 
   return (
@@ -60,17 +55,26 @@ const Sidebar = () => {
       className="w-64 min-h-screen flex flex-col font-[Inter] shadow-2xl"
       style={{ background: "#172A3A" }}
     >
-      <div className="flex flex-col items-center gap-2 px-6 py-8 border-b" style={{ borderColor: "#20344A" }}>
+      {/* Logo/Home */}
+      <Link
+        to="/dashboard"
+        className="flex flex-col items-center gap-2 px-6 py-8 border-b"
+        style={{ borderColor: "#20344A" }}
+      >
         <img
           src="/logo.png"
           alt="Pro IRP Logo"
           className="w-16 h-16 rounded-full shadow mb-2 bg-white"
           style={{ objectFit: "contain" }}
         />
-        <span className="text-2xl font-extrabold tracking-tight" style={{ color: "#FFB800", letterSpacing: "-2px" }}>
+        <span
+          className="text-2xl font-extrabold tracking-tight"
+          style={{ color: "#FFB800", letterSpacing: "-2px" }}
+        >
           Pro <span className="text-white">IRP</span>
         </span>
-      </div>
+      </Link>
+
       <nav className="flex-1 flex flex-col py-8 gap-2">
         <ul className="space-y-1">
           {links.map(({ to, label, icon, badge }) => (
@@ -95,12 +99,12 @@ const Sidebar = () => {
           ))}
         </ul>
       </nav>
+
       {dashboardMode && (
         <div className="mb-8 mt-auto px-6">
           <button
             className="flex items-center gap-2 w-full py-2 px-3 rounded-xl transition font-bold shadow"
             style={{ background: "#FFB800", color: "#172A3A" }}
-            // onClick={handleLogout} // Add your logout logic here
           >
             Log Out
           </button>
