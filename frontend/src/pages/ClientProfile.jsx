@@ -1,3 +1,4 @@
+// /frontend/src/pages/ClientProfile.jsx
 import React, { useState } from "react";
 import ClientRiskChart from "../components/ClientRiskChart";
 import TakeActionMenu from "../components/TakeActionMenu";
@@ -98,15 +99,22 @@ const ClientProfile = () => {
   const [showEmail, setShowEmail] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
 
+  // Risk Score Status
+  const getRiskStatus = (score) => {
+    if (score >= 80) return "Caution";
+    if (score >= 50) return "Watch";
+    return "Low Risk";
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 font-[Inter]">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
         <div className="flex-1">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#172A3A] mb-1">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-[#172A3A] mb-1">
             {client.name}
           </h1>
-          <div className="flex flex-wrap gap-x-7 gap-y-2 items-center text-[#536179] text-base md:text-lg font-medium">
+          <div className="flex flex-wrap gap-x-7 gap-y-2 items-center text-[#536179] text-[15px] md:text-base font-medium">
             <span>🗓️ Customer for <b>{customerSince}</b></span>
             <span>• Last contact: <b>{client.lastContact}</b></span>
           </div>
@@ -114,7 +122,13 @@ const ClientProfile = () => {
         {/* Risk Score & Action */}
         <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
           <div className="flex flex-col items-center">
-            <ClientRiskChart score={client.riskScore} />
+            {/* Status label above chart */}
+            <span className="text-base font-bold mb-2" style={{ color: "#FFB800", lineHeight: 1 }}>
+              {getRiskStatus(client.riskScore)}
+            </span>
+            <div style={{ marginTop: 0, marginBottom: 0 }}>
+              <ClientRiskChart score={client.riskScore} />
+            </div>
           </div>
           <div>
             <TakeActionMenu
