@@ -114,8 +114,6 @@ const ClientProfile = () => {
         {/* Risk Score & Action */}
         <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
           <div className="flex flex-col items-center">
-            <span className="text-sm font-bold text-yellow-500 mb-1" style={{ marginTop: 4 }}>
-              Risk Score
             </span>
             <ClientRiskChart score={client.riskScore} />
           </div>
