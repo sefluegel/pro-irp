@@ -12,9 +12,15 @@ const ClientRiskChart = ({ score }) => {
   const circ = 2 * Math.PI * radius;
   const offset = circ - (percent / 100) * circ;
 
+  // decide label
+  const status =
+    score >= 85 ? "Low Risk" :
+    score >= 60 ? "Caution" :
+    "Danger";
+
   return (
     <div className="flex flex-col items-center justify-center">
-      <svg width={120} height={120} className="mb-[-80px] z-0">
+      <svg width={120} height={120}>
         <circle
           cx={60}
           cy={60}
@@ -46,11 +52,12 @@ const ClientRiskChart = ({ score }) => {
           {score}
         </text>
       </svg>
+
+      {/* status label only, no "Risk Score" text below */}
       <div className="relative -mt-16 z-10 flex flex-col items-center">
         <span className="text-xl font-bold" style={{ color: getColor(score) }}>
-          {score >= 85 ? "Low Risk" : score >= 60 ? "Caution" : "Danger"}
+          {status}
         </span>
-        <span className="text-sm text-gray-400">Risk Score</span>
       </div>
     </div>
   );
