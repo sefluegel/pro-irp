@@ -99,7 +99,7 @@ const ClientProfile = () => {
   const [showEmail, setShowEmail] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
 
-  // Risk Status
+  // Risk Score Status
   const getRiskStatus = (score) => {
     if (score >= 80) return "Caution";
     if (score >= 50) return "Watch";
