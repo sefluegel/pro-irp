@@ -114,7 +114,6 @@ const ClientProfile = () => {
         {/* Risk Score & Action */}
         <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
           <div className="flex flex-col items-center">
-            </span>
             <ClientRiskChart score={client.riskScore} />
           </div>
           <div>
