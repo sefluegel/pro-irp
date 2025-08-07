@@ -79,7 +79,6 @@ const Clients = () => {
     setClients(cs => cs.filter(c => !selected.includes(c.id)));
     setSelected([]);
   };
-  const handleImportFile = () => setShowImport(false);
 
   const filteredClients = clients.filter(c =>
     search === "" ||
@@ -323,9 +322,7 @@ const Clients = () => {
                       className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                         RISK_COLORS[c.risk]
                       }`}
-                    >
-                      {c.risk}
-                    </span>
+                    >{c.risk}</span>
                   </td>
                 )}
                 {columns.includes("status") && (
@@ -334,9 +331,7 @@ const Clients = () => {
                       className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                         STATUS_COLORS[c.status]
                       }`}
-                    >
-                      {c.status}
-                    </span>
+                    >{c.status}</span>
                   </td>
                 )}
                 {columns.includes("owner") && (
@@ -377,54 +372,29 @@ const Clients = () => {
           <div className="bg-white rounded-xl shadow-2xl w-[380px] max-w-[95vw] p-6 relative">
             <button
               className="absolute top-2 right-2 p-1 text-gray-400 hover:text-black"
-              onClick={() => setShowAdd(false)}
-            >
-              <X size={18} />
+              onClick={() => setShowAdd(false)}><X size={18} />
             </button>
             <h2 className="text-xl font-bold text-[#172A3A] mb-2">Add Client</h2>
             <p className="text-gray-500 text-xs mb-3">(*Demo only)</p>
             <form className="space-y-2">
-              <input
-                className="w-full px-3 py-2 border rounded text-sm"
-                placeholder="Name"
-              />
-              <input
-                className="w-full px-3 py-2 border rounded text-sm"
-                placeholder="Phone"
-              />
-              <input
-                className="w-full px-3 py-2 border rounded text-sm"
-                placeholder="Email"
-              />
-              <input
-                className="w-full px-3 py-2 border rounded text-sm"
-                placeholder="Tags (comma sep)"
-              />
+              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Name" />
+              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Phone" />
+              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Email" />
+              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Tags (comma sep)" />
               <div className="flex gap-2">
                 <select className="flex-1 px-3 py-2 border rounded text-sm">
-                  <option>Risk</option>
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
+                  <option>Risk</option><option>High</option><option>Medium</option><option>Low</option>
                 </select>
                 <select className="flex-1 px-3 py-2 border rounded text-sm">
-                  <option>Status</option>
-                  <option>Active</option>
-                  <option>Prospect</option>
-                  <option>Inactive</option>
+                  <option>Status</option><option>Active</option><option>Prospect</option><option>Inactive</option>
                 </select>
               </div>
-              <input
-                className="w-full px-3 py-2 border rounded text-sm"
-                placeholder="Owner"
-              />
+              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Owner" />
               <button
                 type="button"
                 onClick={() => setShowAdd(false)}
                 className="w-full bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] font-bold py-2 rounded-xl shadow"
-              >
-                Save (Demo)
-              </button>
+              >Save (Demo)</button>
             </form>
           </div>
         </div>
@@ -436,19 +406,15 @@ const Clients = () => {
           <div className="bg-white rounded-xl shadow-2xl w-[430px] max-w-[98vw] p-6 relative">
             <button
               className="absolute top-2 right-2 p-1 text-gray-400 hover:text-black"
-              onClick={() => setShowImport(false)}
-            >
-              <X size={18} />
+              onClick={() => setShowImport(false)}><X size={18} />
             </button>
             <h2 className="text-xl font-bold text-[#172A3A] mb-3">Import Clients</h2>
-            <p className="text-gray-500 text-xs mb-4">
-              Upload a CSV; mapping not implemented.
-            </p>
+            <p className="text-gray-500 text-xs mb-4">Upload a CSV; mapping not implemented.</p>
             <input
               type="file"
               accept=".csv"
               ref={fileInput}
-              onChange={handleImportFile}
+              onChange={() => setShowImport(false)}
               className="mb-2"
             />
             <button
@@ -465,4 +431,3 @@ const Clients = () => {
 };
 
 export default Clients;
-
