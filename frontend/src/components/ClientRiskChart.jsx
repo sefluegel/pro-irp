@@ -12,14 +12,23 @@ const ClientRiskChart = ({ score }) => {
   const circ = 2 * Math.PI * radius;
   const offset = circ - (percent / 100) * circ;
 
-  // decide label
+  // Decide status label
   const status =
     score >= 85 ? "Low Risk" :
     score >= 60 ? "Caution" :
     "Danger";
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center">
+      {/* Status label above the chart */}
+      <span
+        className="text-lg font-bold mb-2"
+        style={{ color: getColor(score), lineHeight: 1 }}
+      >
+        {status}
+      </span>
+
+      {/* Donut SVG */}
       <svg width={120} height={120}>
         <circle
           cx={60}
@@ -52,13 +61,6 @@ const ClientRiskChart = ({ score }) => {
           {score}
         </text>
       </svg>
-
-      {/* status label only, no "Risk Score" text below */}
-      <div className="relative -mt-16 z-10 flex flex-col items-center">
-        <span className="text-xl font-bold" style={{ color: getColor(score) }}>
-          {status}
-        </span>
-      </div>
     </div>
   );
 };
