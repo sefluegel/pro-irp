@@ -28,7 +28,6 @@ const Sidebar = () => {
   const dashboardMode = [
     "/dashboard",
     "/clients",
-    "/policies",
     "/tasks",
     "/settings"
   ].some(path => location.pathname.startsWith(path));
@@ -37,7 +36,6 @@ const Sidebar = () => {
   const dashboardLinks = [
     { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
     { to: "/clients",   label: "Clients",   icon: <Users size={20} /> },
-    { to: "/policies",  label: "Policies",  icon: <FileText size={20} /> },
     { to: "/tasks",     label: "Tasks",     icon: <ListChecks size={20} /> },
     { to: "/settings",  label: "Settings",  icon: <Settings size={20} /> },
   ];
