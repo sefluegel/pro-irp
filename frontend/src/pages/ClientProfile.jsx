@@ -185,3 +185,48 @@ const ClientProfile = () => {
           >
             <CalendarClock size={18} /> Schedule Review
           </button>
+        </div>
+      </div>
+
+      {/* Top Half: 3-Column Section */}
+      <div className="grid md:grid-cols-2 gap-6 mb-6" style={{ minHeight: 260 }}>
+        {/* Retention Risk Box (left half) */}
+        <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-between min-h-[260px]">
+          <div className="flex items-center gap-4 mb-3">
+            {/* Only ClientRiskChart here, label & color handled in chart */}
+            <ClientRiskChart score={client.riskScore} size={90} />
+          </div>
+          <div className="text-gray-700 mb-2">{retentionDetail.explanation}</div>
+          <div>
+            <div className="font-bold text-red-600 mb-1">Red Flags:</div>
+            <ul className="list-disc ml-5 space-y-1 text-sm">
+              {retentionDetail.flags.map((flag, i) => (
+                <li key={i}>
+                  <span className="font-semibold">{flag.title}</span>{" "}
+                  <span className="text-gray-600">({flag.date})</span>
+                  <div className="text-gray-700">{flag.detail}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Right: Recent Communication and Tasks Due */}
+        <div className="flex flex-col gap-6 h-full">
+          {/* Recent Communication */}
+          <div className="bg-white rounded-2xl shadow p-6 flex-1 flex flex-col min-h-[120px]">
+            <div className="font-bold mb-2 text-[#172A3A]">Recent Communication</div>
+            <ul className="space-y-2 text-sm">
+              {recentComms.map((c, idx) => (
+                <li key={idx} className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    {c.type === "sms" && <MessageCircle size={16} className="text-blue-400" />}
+                    {c.type === "email" && <Mail size={16} className="text-green-500" />}
+                    {c.type === "newsletter" && <Mail size={16} className="text-purple-500" />}
+                    <div>
+                      <div className="font-medium">{c.text}</div>
+                      <div className="text-gray-400 text-xs">{c.date}</div>
+                    </div>
+                  </div>
+                  <button
+                    className="text-blue-600 font-semibold text-x
