@@ -1,94 +1,140 @@
 // /frontend/src/pages/ClientProfile.jsx
-import React from "react";
-import { PieChart, Pie, Cell } from "recharts";
-import { Phone, Mail, MessageCircle, Edit2, FileText } from "lucide-react";
+import React, { useState } from "react";
+import ClientRiskChart from "../components/ClientRiskChart";
+import TakeActionMenu from "../components/TakeActionMenu";
+import OutreachLog from "../components/OutreachLog";
+import MessageThread from "../components/MessageThread";
+import ClientScheduleModal from "../components/ClientScheduleModal";
+import ClientDetailCard from "../components/ClientDetailCard";
 
-// Example static data for pie chart (risk score)
-const COLORS = ["#FF4D4D", "#FFB800", "#20C997"]; // Red, Gold, Green, etc.
-const pieData = [
-  { name: "Risk Score", value: 72 },
-  { name: "Remaining", value: 28 },
-];
-
-const client = {
-  name: "Patricia Garrett",
-  phone: "(513) 702-3199",
-  email: "stillbelieve54@gmail.com",
-  tags: ["MAPD", "High Risk"],
-  status: "Active",
-  owner: "Scott Fluegel",
-  // Add all your custom fields here!
+// Demo/mock data for profile
+const MOCK_CLIENT = {
+  id: 1,
+  name: "Jane Doe",
+  dob: "1955-04-12",
+  email: "jane.doe@email.com",
+  phone: "859-555-1212",
+  address: "123 Main St",
+  city: "Hebron",
+  state: "KY",
+  zip: "41048",
+  effectiveDate: "2021-03-05",
+  lastContact: "2024-07-12",
+  preferredLanguage: "en",
+  primaryCare: "Dr. Bob Smith",
+  specialists: "Dr. Jane Specialist, Dr. Tim Ortho",
+  medications: "Aspirin, Lisinopril",
+  carrier: "uhc",
+  plan: "uhc1",
+  riskScore: 83,
+  notes: "",
+  soa: { onFile: true, signed: "2024-03-18" },
+  ptc: { onFile: true, signed: "2024-02-15" },
+  enrollment: { onFile: false },
+  policies: [
+    { carrier: "Aetna", plan: "Aetna PPO Value", effective: "2018-01-01" }
+  ],
+  uploads: [
+    { label: "SOA", file: "jane_soa.pdf", date: "2024-03-18" },
+    { label: "PTC", file: "jane_ptc.pdf", date: "2024-02-15" }
+  ],
+  outreach: [
+    { date: "2025-08-07T10:12:00", type: "birthday", desc: "🎂 Birthday message sent" },
+    { date: "2025-07-22T07:00:00", type: "retention", desc: "🔁 Retention email sent" },
+    { date: "2025-06-15T13:22:00", type: "newsletter", desc: "📰 Newsletter sent" }
+  ],
+  smsUnread: 1,
+  emailUnread: 0,
+  messages: {
+    sms: [
+      { from: "client", text: "Can you call me tomorrow?", date: "2025-08-06T09:01:00", read: false },
+      { from: "agent", text: "Absolutely! What time works?", date: "2025-08-06T09:05:00", read: true },
+    ],
+    email: [
+      { from: "agent", text: "Welcome to Pro IRP!", date: "2025-07-22T07:01:00", read: true }
+    ]
+  }
 };
 
-const ClientProfile = () => (
-  <div className="max-w-4xl mx-auto p-6">
-    {/* Top: Name and quick actions */}
-    <div className="flex flex-col md:flex-row gap-8 items-center justify-between mb-8">
-      {/* Avatar and Name */}
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 bg-[#172A3A] rounded-full flex items-center justify-center text-white text-xl font-bold shadow-md border-2 border-[#FFB800]">
-          {client.name.split(" ").map(word => word[0]).join("").toUpperCase()}
+const ClientProfile = () => {
+  const [showSms, setShowSms] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+
+  // Calculate "Customer For" time
+  const customerSince = (() => {
+    const start = new Date(MOCK_CLIENT.effectiveDate);
+    const now = new Date();
+    const years = now.getFullYear() - start.getFullYear();
+    const months = now.getMonth() - start.getMonth() + (years * 12);
+    const yearsPart = Math.floor(months / 12);
+    const monthsPart = months % 12;
+    return `${yearsPart} year${yearsPart !== 1 ? "s" : ""}, ${monthsPart} month${monthsPart !== 1 ? "s" : ""}`;
+  })();
+
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-12 font-[Inter]">
+      {/* Header: Name, Risk, Take Action */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-10 mb-10">
+        <div className="flex-1">
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl font-extrabold text-[#172A3A]">{MOCK_CLIENT.name}</h1>
+          </div>
+          <div className="flex gap-8 mt-2 text-gray-600 text-lg">
+            <span>🗓️ Customer for <b>{customerSince}</b></span>
+            <span>📞 Last contact: <b>{MOCK_CLIENT.lastContact}</b></span>
+          </div>
         </div>
-        <div>
-          <div className="text-2xl font-extrabold text-[#172A3A]">{client.name}</div>
-          <div className="flex gap-2 text-sm text-gray-600 mt-1">
-            <span className="bg-[#FFB800] text-[#172A3A] px-2 py-0.5 rounded-full font-semibold">Active</span>
-            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">MAPD</span>
+        {/* Ensure Risk and Take Action are SIDE BY SIDE on desktop, STACKED on mobile */}
+        <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+          <div>
+            <ClientRiskChart score={MOCK_CLIENT.riskScore} />
+          </div>
+          <div>
+            <TakeActionMenu
+              smsUnread={MOCK_CLIENT.smsUnread}
+              emailUnread={MOCK_CLIENT.emailUnread}
+              onSms={() => setShowSms(true)}
+              onEmail={() => setShowEmail(true)}
+              onCall={() => alert("Calling client... (demo)")}
+              onSchedule={() => setShowSchedule(true)}
+            />
           </div>
         </div>
       </div>
-      {/* Quick action icons */}
-      <div className="flex gap-3">
-        <button className="p-2 rounded hover:bg-blue-50" title="Call"><Phone size={20} className="text-blue-700" /></button>
-        <button className="p-2 rounded hover:bg-blue-50" title="Email"><Mail size={20} className="text-yellow-500" /></button>
-        <button className="p-2 rounded hover:bg-blue-50" title="SMS"><MessageCircle size={20} className="text-green-600" /></button>
-        <button className="p-2 rounded hover:bg-blue-50" title="Edit"><Edit2 size={20} className="text-gray-500" /></button>
-        <button className="p-2 rounded hover:bg-blue-50" title="Docs"><FileText size={20} className="text-gray-500" /></button>
+
+      {/* All client details & uploads */}
+      <ClientDetailCard client={MOCK_CLIENT} />
+
+      {/* Outreach Log */}
+      <div className="mt-10">
+        <OutreachLog outreach={MOCK_CLIENT.outreach} />
       </div>
+
+      {/* Modals */}
+      {showSms && (
+        <MessageThread
+          channel="sms"
+          thread={MOCK_CLIENT.messages.sms}
+          onClose={() => setShowSms(false)}
+          unread={MOCK_CLIENT.smsUnread}
+          clientName={MOCK_CLIENT.name}
+        />
+      )}
+      {showEmail && (
+        <MessageThread
+          channel="email"
+          thread={MOCK_CLIENT.messages.email}
+          onClose={() => setShowEmail(false)}
+          unread={MOCK_CLIENT.emailUnread}
+          clientName={MOCK_CLIENT.name}
+        />
+      )}
+      {showSchedule && (
+        <ClientScheduleModal onClose={() => setShowSchedule(false)} client={MOCK_CLIENT} />
+      )}
     </div>
-    {/* Pie Chart + Take Action row */}
-    <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
-      {/* Risk Pie Chart */}
-      <div className="flex flex-col items-center">
-        <PieChart width={160} height={160}>
-          <Pie
-            data={pieData}
-            dataKey="value"
-            innerRadius={60}
-            outerRadius={80}
-            startAngle={90}
-            endAngle={-270}
-            paddingAngle={2}
-          >
-            {pieData.map((entry, i) => (
-              <Cell key={`cell-${i}`} fill={COLORS[i]} />
-            ))}
-          </Pie>
-        </PieChart>
-        <div className="absolute font-bold text-3xl text-[#172A3A]" style={{ marginTop: "-95px" }}>72</div>
-        <div className="text-sm text-gray-500 mt-2">Risk Score</div>
-      </div>
-      {/* Take Action button and status */}
-      <div className="flex flex-col items-center md:items-start gap-3">
-        <button className="bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] font-bold px-6 py-3 rounded-2xl shadow-lg text-lg transition">
-          Take Action
-        </button>
-        {/* Add status, last contact, client since, etc. here */}
-        <div className="text-gray-500 text-sm mt-2">Client since: July 2022</div>
-        <div className="text-gray-500 text-sm">Last contact: 4 days ago</div>
-      </div>
-    </div>
-    {/* The rest of your profile page goes here (forms, outreach logs, docs, etc.) */}
-    <div className="bg-white rounded-xl shadow p-6">
-      {/* ... More details/logs here ... */}
-      <div className="text-gray-700 text-sm">
-        <b>Phone:</b> {client.phone} <br />
-        <b>Email:</b> {client.email} <br />
-        <b>Owner:</b> {client.owner} <br />
-        {/* Add more fields as you wish */}
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 export default ClientProfile;
