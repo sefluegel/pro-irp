@@ -1,12 +1,9 @@
-// /frontend/src/pages/ClientProfile.jsx
 import React, { useState } from "react";
+import ClientDetailCard from "../components/ClientDetailCard";
 import ClientRiskChart from "../components/ClientRiskChart";
-import TakeActionMenu from "../components/TakeActionMenu";
-import OutreachLog from "../components/OutreachLog";
-import MessageThread from "../components/MessageThread";
-import ClientScheduleModal from "../components/ClientScheduleModal";
+import { Phone, MessageCircle, Calendar, Mail, AlertCircle, ChevronRight } from "lucide-react";
 
-// Demo/mock data for profile
+// --- MOCK DATA --- //
 const MOCK_CLIENT = {
   id: 1,
   name: "Jane Doe",
@@ -22,68 +19,121 @@ const MOCK_CLIENT = {
   preferredLanguage: "en",
   primaryCare: "Dr. Bob Smith",
   specialists: "Dr. Jane Specialist, Dr. Tim Ortho",
-  medications: "Aspirin, Lisinopril",
-  carrier: "uhc",
-  plan: "uhc1",
-  riskScore: 83,
-  notes: "",
+  medications: "Aspirin, Lisinopril, Jardiance (added 07/2025, Tier 4)",
+  carrier: "UHC",
+  plan: "UHC1",
+  riskScore: 87,
+  notes: "Client recently changed address; new medication prescribed.",
   soa: { onFile: true, signed: "2024-03-18" },
   ptc: { onFile: true, signed: "2024-02-15" },
   enrollment: { onFile: false },
   policies: [
-    { carrier: "Aetna", plan: "Aetna PPO Value", effective: "2018-01-01" }
+    { type: "MAPD", carrier: "Aetna", plan: "PPO Value", effective: "2018-01-01" },
+    { type: "Final Expense", carrier: "Mutual of Omaha", plan: "Level Benefit", effective: "2022-06-14" }
   ],
   uploads: [
     { label: "SOA", file: "jane_soa.pdf", date: "2024-03-18" },
     { label: "PTC", file: "jane_ptc.pdf", date: "2024-02-15" }
-  ],
-  outreach: [
-    { date: "2025-08-07T10:12:00", type: "birthday", desc: "🎂 Birthday message sent" },
-    { date: "2025-07-22T07:00:00", type: "retention", desc: "🔁 Retention email sent" },
-    { date: "2025-06-15T13:22:00", type: "newsletter", desc: "📰 Newsletter sent" }
-  ],
-  smsUnread: 1,
-  emailUnread: 0,
-  messages: {
-    sms: [
-      { from: "client", text: "Can you call me tomorrow?", date: "2025-08-06T09:01:00", read: false },
-      { from: "agent", text: "Absolutely! What time works?", date: "2025-08-06T09:05:00", read: true },
-    ],
-    email: [
-      { from: "agent", text: "Welcome to Pro IRP!", date: "2025-07-22T07:01:00", read: true }
-    ]
-  }
+  ]
 };
 
-const fields = [
-  { key: "dob", label: "DOB", icon: "📅" },
-  { key: "email", label: "Email", icon: "📧" },
-  { key: "phone", label: "Phone", icon: "📞" },
-  { key: "address", label: "Address", icon: "🏠" },
-  { key: "effectiveDate", label: "Effective Date", icon: "🗓️" },
-  { key: "preferredLanguage", label: "Preferred Language", icon: "🗣️" },
-  { key: "carrier", label: "Carrier", icon: "🏢" },
-  { key: "plan", label: "Plan", icon: "📄" },
-  { key: "primaryCare", label: "Primary Care", icon: "👨‍⚕️" },
-  { key: "specialists", label: "Specialists", icon: "👩‍⚕️" },
-  { key: "medications", label: "Medications", icon: "💊" }
+const MOCK_RISK_DETAILS = {
+  score: 87,
+  tier: "High",
+  explanation: "Client risk score is high due to multiple major triggers. Immediate attention recommended.",
+  triggers: [
+    {
+      label: "Added Tier 4 Medication",
+      detail: "Jardiance prescribed on 07/05/2025 (Tier 4 drug).",
+      icon: <AlertCircle className="text-red-500" size={16} />,
+      date: "2025-07-05"
+    },
+    {
+      label: "No contact in 264 days",
+      detail: "Last contact was over 8 months ago.",
+      icon: <AlertCircle className="text-yellow-500" size={16} />,
+      date: "2024-11-15"
+    },
+    {
+      label: "Doctor leaving network",
+      detail: "Primary care Dr. Bob Smith is leaving network next month.",
+      icon: <AlertCircle className="text-red-400" size={16} />,
+      date: "2025-08-01"
+    }
+  ]
+};
+
+const MOCK_AUTOMATIONS = [
+  {
+    type: "SMS",
+    summary: "Check-in text sent (high risk: new medication)",
+    date: "2025-07-06 09:12",
+    action: "sms",
+    id: 1234
+  },
+  {
+    type: "Email",
+    summary: "Provider network change alert email sent",
+    date: "2025-07-07 15:22",
+    action: "email",
+    id: 5678
+  },
+  {
+    type: "Newsletter",
+    summary: "Monthly health newsletter sent",
+    date: "2025-07-10 08:00",
+    action: "newsletter",
+    id: 9101
+  }
 ];
 
+const MOCK_TASKS = [
+  {
+    type: "Call",
+    label: "Check-in call (Tier 4 med)",
+    due: "Today",
+    action: "call",
+    id: 201
+  },
+  {
+    type: "Text",
+    label: "Send 'Provider change' text",
+    due: "Tomorrow",
+    action: "sms",
+    id: 202
+  },
+  {
+    type: "Appt",
+    label: "Schedule policy review",
+    due: "Due in 3 days",
+    action: "calendar",
+    id: 203
+  }
+];
+
+const actionButton = (type, label, onClick) => {
+  const icons = {
+    call: <Phone size={18} className="text-blue-600" />,
+    sms: <MessageCircle size={18} className="text-green-600" />,
+    calendar: <Calendar size={18} className="text-indigo-500" />,
+    email: <Mail size={18} className="text-yellow-600" />,
+    newsletter: <Mail size={18} className="text-gray-400" />
+  };
+  return (
+    <button
+      className="rounded-full p-2 hover:bg-gray-100 transition"
+      onClick={onClick}
+      title={label}
+    >
+      {icons[type] || <ChevronRight />}
+    </button>
+  );
+};
+
 const ClientProfile = () => {
-  // For demo, editable fields are local only (no backend)
-  const [client, setClient] = useState(MOCK_CLIENT);
-  const [editing, setEditing] = useState({});
+  const [client] = useState(MOCK_CLIENT);
 
-  // Editable field handler
-  const handleFieldChange = (key, value) => {
-    setClient(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleEditToggle = (key) => {
-    setEditing(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // Calculate "Customer For" time
+  // Customer since calculation
   const customerSince = (() => {
     const start = new Date(client.effectiveDate);
     const now = new Date();
@@ -94,179 +144,112 @@ const ClientProfile = () => {
     return `${yearsPart} year${yearsPart !== 1 ? "s" : ""}, ${monthsPart} month${monthsPart !== 1 ? "s" : ""}`;
   })();
 
-  // Modals
-  const [showSms, setShowSms] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
-  const [showSchedule, setShowSchedule] = useState(false);
-
-  // Risk Score Status
-  const getRiskStatus = (score) => {
-    if (score >= 80) return "Caution";
-    if (score >= 50) return "Watch";
-    return "Low Risk";
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10 font-[Inter]">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-        <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-[#172A3A] mb-1">
-            {client.name}
-          </h1>
-          <div className="flex flex-wrap gap-x-7 gap-y-2 items-center text-[#536179] text-[15px] md:text-base font-medium">
-            <span>🗓️ Customer for <b>{customerSince}</b></span>
-            <span>• Last contact: <b>{client.lastContact}</b></span>
-          </div>
-        </div>
-
-        {/* --- FIXED: chart + action only; no extra label overlapping --- */}
-        <div className="flex items-center gap-8">
-          <ClientRiskChart score={client.riskScore} />
-          <TakeActionMenu
-            smsUnread={client.smsUnread}
-            emailUnread={client.emailUnread}
-            onSms={() => setShowSms(true)}
-            onEmail={() => setShowEmail(true)}
-            onCall={() => alert("Calling client... (demo)")}
-            onSchedule={() => setShowSchedule(true)}
-          />
+    <div className="max-w-7xl mx-auto px-2 py-8 font-[Inter]">
+      {/* ----------- HEADER ----------- */}
+      <div className="mb-4">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-[#172A3A] mb-1 leading-tight">
+          {client.name}
+        </h1>
+        <div className="flex flex-wrap gap-x-7 gap-y-1 items-center text-[#536179] text-sm md:text-base font-medium mb-2">
+          <span>🗓️ Customer for <b>{customerSince}</b></span>
+          <span>• Last contact: <b>{client.lastContact}</b></span>
+          <span className="flex items-center gap-1">
+            <ClientRiskChart score={MOCK_RISK_DETAILS.score} small />
+            <span className={`font-bold ${MOCK_RISK_DETAILS.tier === "High" ? "text-red-600" : MOCK_RISK_DETAILS.tier === "Medium" ? "text-yellow-500" : "text-green-600"}`}>
+              {MOCK_RISK_DETAILS.tier} Risk
+            </span>
+            <span className="text-gray-500 text-sm">(Score: {MOCK_RISK_DETAILS.score})</span>
+          </span>
         </div>
       </div>
 
-      {/* Info Card, more compact with editability */}
-      <div className="bg-white rounded-2xl shadow-md p-7 md:p-10 mb-10 grid grid-cols-1 md:grid-cols-2 gap-8 text-[15px]">
-        <div className="space-y-3">
-          {fields.slice(0, 6).map(f => (
-            <div className="flex items-center gap-2" key={f.key}>
-              <span className="text-lg">{f.icon}</span>
-              <span className="font-bold">{f.label}:</span>
-              {editing[f.key] ? (
-                <input
-                  className="ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-400 transition w-48"
-                  value={client[f.key]}
-                  onChange={e => handleFieldChange(f.key, e.target.value)}
-                  onBlur={() => handleEditToggle(f.key)}
-                  autoFocus
-                />
-              ) : (
-                <span
-                  className="ml-2 cursor-pointer"
-                  onClick={() => handleEditToggle(f.key)}
-                >
-                  {client[f.key]}
-                  <span className="ml-2 text-gray-300 hover:text-blue-400 transition">✎</span>
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="space-y-3">
-          {fields.slice(6).map(f => (
-            <div className="flex items-center gap-2" key={f.key}>
-              <span className="text-lg">{f.icon}</span>
-              <span className="font-bold">{f.label}:</span>
-              {editing[f.key] ? (
-                <input
-                  className="ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-400 transition w-48"
-                  value={client[f.key]}
-                  onChange={e => handleFieldChange(f.key, e.target.value)}
-                  onBlur={() => handleEditToggle(f.key)}
-                  autoFocus
-                />
-              ) : (
-                <span
-                  className="ml-2 cursor-pointer"
-                  onClick={() => handleEditToggle(f.key)}
-                >
-                  {client[f.key]}
-                  <span className="ml-2 text-gray-300 hover:text-blue-400 transition">✎</span>
-                </span>
-              )}
-            </div>
-          ))}
-          {/* Notes field at the bottom */}
-          <div className="flex items-start gap-2 mt-2">
-            <span className="text-lg">📝</span>
-            <span className="font-bold">Notes:</span>
-            {editing["notes"] ? (
-              <textarea
-                className="ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-400 transition w-60 min-h-[40px]"
-                value={client["notes"]}
-                onChange={e => handleFieldChange("notes", e.target.value)}
-                onBlur={() => handleEditToggle("notes")}
-                autoFocus
-              />
-            ) : (
-              <span
-                className="ml-2 cursor-pointer"
-                onClick={() => handleEditToggle("notes")}
-              >
-                {client["notes"] || <span className="text-gray-400">No notes</span>}
-                <span className="ml-2 text-gray-300 hover:text-blue-400 transition">✎</span>
+      {/* ----------- TOP HALF: 2-COLUMN SPLIT ----------- */}
+      <div className="flex flex-col md:flex-row gap-6 mb-6" style={{ minHeight: 320 }}>
+        {/* LEFT: Retention Risk Box */}
+        <div className="w-full md:w-1/2 flex flex-col">
+          <div className="bg-white shadow-xl rounded-xl border border-red-200 p-5 flex-1 min-h-[280px]">
+            <div className="flex items-center gap-2 mb-2">
+              <ClientRiskChart score={MOCK_RISK_DETAILS.score} small />
+              <span className={`text-lg font-bold mr-2 ${MOCK_RISK_DETAILS.tier === "High" ? "text-red-600" : MOCK_RISK_DETAILS.tier === "Medium" ? "text-yellow-500" : "text-green-600"}`}>
+                {MOCK_RISK_DETAILS.tier} Risk
               </span>
-            )}
+              <span className="text-gray-500 text-sm">(Score: {MOCK_RISK_DETAILS.score})</span>
+            </div>
+            <div className="text-gray-800 text-sm mb-2">{MOCK_RISK_DETAILS.explanation}</div>
+            <div className="text-xs text-[#b91c1c] font-semibold mb-1">Red Flags:</div>
+            <ul className="text-xs space-y-1">
+              {MOCK_RISK_DETAILS.triggers.map((t, i) => (
+                <li key={i} className="flex gap-2 items-start">
+                  <span className="mt-0.5">{t.icon}</span>
+                  <div>
+                    <b>{t.label}</b> <span className="text-gray-500">({t.date})</span>
+                    <div className="text-gray-700">{t.detail}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* RIGHT: Previous Communication + Tasks (stacked) */}
+        <div className="w-full md:w-1/2 flex flex-col gap-4">
+          {/* Previous Communication/Automations */}
+          <div className="bg-white shadow-xl rounded-xl border p-4 flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-[#172A3A] text-base">Recent Communication</span>
+            </div>
+            <ul className="text-sm space-y-2">
+              {MOCK_AUTOMATIONS.map(a => (
+                <li key={a.id} className="flex gap-2 items-center">
+                  {actionButton(a.action, a.type, () => {})}
+                  <div className="flex-1">
+                    <span className="font-medium">{a.summary}</span>
+                    <span className="block text-xs text-gray-500">{a.date}</span>
+                  </div>
+                  <button
+                    onClick={() => {}}
+                    className="ml-1 text-blue-600 hover:underline text-xs"
+                  >
+                    View
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Tasks Due */}
+          <div className="bg-white shadow-xl rounded-xl border p-4 flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-[#172A3A] text-base">Tasks Due</span>
+            </div>
+            <ul className="text-sm space-y-2">
+              {MOCK_TASKS.map(task => (
+                <li key={task.id} className="flex gap-2 items-center">
+                  {actionButton(task.action, task.type, () => {})}
+                  <div className="flex-1">
+                    <span className="font-medium">{task.label}</span>
+                    <span className="block text-xs text-gray-500">{task.due}</span>
+                  </div>
+                  <button
+                    onClick={() => {}}
+                    className="ml-1 text-blue-600 hover:underline text-xs"
+                  >
+                    Complete
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
 
-      {/* Documents and policies */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-        <div>
-          <div className="font-bold mb-2 text-[#172A3A]">Documents & Compliance</div>
-          <div className="mb-1">
-            <span className="font-semibold">SOA:</span>{" "}
-            {client.soa.onFile ? (
-              <span className="text-green-600">
-                On File <span className="text-xs">({client.soa.signed})</span>
-              </span>
-            ) : (
-              <span className="text-red-500">Missing</span>
-            )}
-          </div>
-          {/* ...rest unchanged... */}
-        </div>
-        <div>
-          <div className="font-bold mb-2 text-[#172A3A]">Uploaded Files:</div>
-          <ul className="list-disc list-inside ml-2 text-sm">
-            {client.uploads.map((f, i) => (
-              <li key={i}>
-                {f.label}: {f.file} ({f.date})
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* ----------- BOTTOM HALF: CLIENT DETAIL CARD ----------- */}
+      <div className="w-full">
+        <ClientDetailCard client={client} />
       </div>
-
-      {/* Outreach Log */}
-      <div className="mt-10">
-        <OutreachLog outreach={client.outreach} />
-      </div>
-
-      {/* Modals */}
-      {showSms && (
-        <MessageThread
-          channel="sms"
-          thread={client.messages.sms}
-          onClose={() => setShowSms(false)}
-          unread={client.smsUnread}
-          clientName={client.name}
-        />
-      )}
-      {showEmail && (
-        <MessageThread
-          channel="email"
-          thread={client.messages.email}
-          onClose={() => setShowEmail(false)}
-          unread={client.emailUnread}
-          clientName={client.name}
-        />
-      )}
-      {showSchedule && (
-        <ClientScheduleModal onClose={() => setShowSchedule(false)} client={client} />
-      )}
     </div>
   );
 };
 
 export default ClientProfile;
+
