@@ -122,7 +122,7 @@ const ClientProfile = () => {
         {/* Risk Score & Action */}
         <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
           <div className="flex flex-col items-center">
-            {/* Status label above chart */}
+            {/* Status label above chart (no Risk Score text below!) */}
             <span className="text-base font-bold mb-2" style={{ color: "#FFB800", lineHeight: 1 }}>
               {getRiskStatus(client.riskScore)}
             </span>
