@@ -6,12 +6,6 @@ import OutreachLog from "../components/OutreachLog";
 import MessageThread from "../components/MessageThread";
 import ClientScheduleModal from "../components/ClientScheduleModal";
 import ClientDetailCard from "../components/ClientDetailCard";
-import {
-  Phone,
-  MessageCircle,
-  Mail,
-  CalendarClock,
-} from "lucide-react";
 
 // Demo/mock data for profile
 const MOCK_CLIENT = {
@@ -62,77 +56,9 @@ const MOCK_CLIENT = {
   }
 };
 
-const retentionDetail = {
-  explanation: "Client risk score is high due to multiple major triggers. Immediate attention recommended.",
-  flags: [
-    {
-      title: "Added Tier 4 Medication",
-      date: "2025-07-05",
-      detail: "Jardiance prescribed on 07/05/2025 (Tier 4 drug).",
-    },
-    {
-      title: "No contact in 264 days",
-      date: "2024-11-15",
-      detail: "Last contact was over 8 months ago.",
-    },
-    {
-      title: "Doctor leaving network",
-      date: "2025-08-01",
-      detail: "Primary care Dr. Bob Smith is leaving network next month.",
-    },
-  ]
-};
-
-const recentComms = [
-  {
-    type: "sms",
-    text: "Check-in text sent (high risk: new medication)",
-    date: "2025-07-06 09:12",
-    link: "#",
-  },
-  {
-    type: "email",
-    text: "Provider network change alert email sent",
-    date: "2025-07-07 15:22",
-    link: "#",
-  },
-  {
-    type: "newsletter",
-    text: "Monthly health newsletter sent",
-    date: "2025-07-10 08:00",
-    link: "#",
-  },
-];
-
-const tasksDue = [
-  {
-    type: "call",
-    text: "Check-in call (Tier 4 med)",
-    due: "Today",
-    action: "call",
-    complete: false,
-  },
-  {
-    type: "sms",
-    text: "Send 'Provider change' text",
-    due: "Tomorrow",
-    action: "sms",
-    complete: false,
-  },
-  {
-    type: "calendar",
-    text: "Schedule policy review",
-    due: "Due in 3 days",
-    action: "calendar",
-    complete: false,
-  },
-];
-
 const ClientProfile = () => {
-  const [client] = useState(MOCK_CLIENT);
-  const [showSms, setShowSms] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
-  const [showSchedule, setShowSchedule] = useState(false);
+  // For demo, editable fields are local only (no backend)
+  const [client, setClient] = useState(MOCK_CLIENT);
 
   // Calculate "Customer For" time
   const customerSince = (() => {
@@ -145,21 +71,85 @@ const ClientProfile = () => {
     return `${yearsPart} year${yearsPart !== 1 ? "s" : ""}, ${monthsPart} month${monthsPart !== 1 ? "s" : ""}`;
   })();
 
-  // Risk Status/Color
-  const getRiskText = score =>
-    score >= 80 ? "High Risk" : score >= 50 ? "Moderate Risk" : "Low Risk";
-  const getRiskColor = score =>
-    score >= 80
-      ? "text-red-600"
-      : score >= 50
-      ? "text-yellow-600"
-      : "text-green-600";
+  // Modals
+  const [showSms, setShowSms] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
 
-  // --- Render ---
+  // --- Demo data for retention breakdown, tasks, communication ---
+  const riskBreakdown = {
+    summary: "Client risk score is high due to multiple major triggers. Immediate attention recommended.",
+    flags: [
+      {
+        title: "Added Tier 4 Medication",
+        date: "2025-07-05",
+        desc: "Jardiance prescribed on 07/05/2025 (Tier 4 drug)."
+      },
+      {
+        title: "No contact in 264 days",
+        date: "2024-11-15",
+        desc: "Last contact was over 8 months ago."
+      },
+      {
+        title: "Doctor leaving network",
+        date: "2025-08-01",
+        desc: "Primary care Dr. Bob Smith is leaving network next month."
+      }
+    ]
+  };
+
+  const communications = [
+    {
+      icon: "💬",
+      desc: "Check-in text sent (high risk: new medication)",
+      date: "2025-07-06 09:12",
+      type: "sms",
+      view: true
+    },
+    {
+      icon: "📧",
+      desc: "Provider network change alert email sent",
+      date: "2025-07-07 15:22",
+      type: "email",
+      view: true
+    },
+    {
+      icon: "📰",
+      desc: "Monthly health newsletter sent",
+      date: "2025-07-10 08:00",
+      type: "email",
+      view: true
+    }
+  ];
+
+  const tasks = [
+    {
+      icon: "📞",
+      label: "Check-in call (Tier 4 med)",
+      due: "Today",
+      action: () => alert("Dialing out..."),
+      status: "Complete"
+    },
+    {
+      icon: "💬",
+      label: "Send 'Provider change' text",
+      due: "Tomorrow",
+      action: () => alert("Opening SMS..."),
+      status: "Complete"
+    },
+    {
+      icon: "📅",
+      label: "Schedule policy review",
+      due: "Due in 3 days",
+      action: () => alert("Opening scheduling..."),
+      status: "Complete"
+    }
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 font-[Inter]">
-      {/* Header with client info and Quick Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
         <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-extrabold text-[#172A3A] mb-1">
             {client.name}
@@ -169,121 +159,77 @@ const ClientProfile = () => {
             <span>• Last contact: <b>{client.lastContact}</b></span>
           </div>
         </div>
-        {/* Quick Actions Panel */}
-        <div className="flex gap-2 md:gap-4">
-          <button
-            className="flex items-center gap-1 bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] font-bold px-4 py-2 rounded-lg shadow-sm transition"
-            onClick={() => alert("Calling client... (demo)")}
-          >
-            <Phone size={18} /> Call
-          </button>
-          <button
-            className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold px-4 py-2 rounded-lg shadow-sm transition"
-            onClick={() => setShowSms(true)}
-          >
-            <MessageCircle size={18} /> Text
-          </button>
-          <button
-            className="flex items-center gap-1 bg-green-100 hover:bg-green-200 text-green-800 font-bold px-4 py-2 rounded-lg shadow-sm transition"
-            onClick={() => setShowEmail(true)}
-          >
-            <Mail size={18} /> Email
-          </button>
-          <button
-            className="flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-4 py-2 rounded-lg shadow-sm transition"
-            onClick={() => setShowSchedule(true)}
-          >
-            <CalendarClock size={18} /> Schedule Review
-          </button>
-        </div>
       </div>
 
-      {/* Top Half: 3-Column Section */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6" style={{ minHeight: 260 }}>
-        {/* Retention Risk Box (left half) */}
-        <div className="bg-white rounded-2xl shadow p-6 flex flex-col justify-between min-h-[260px]">
-          <div className="flex items-center gap-4 mb-3">
-            <ClientRiskChart score={client.riskScore} size={90} />
-            <div>
-              <div className={`text-xl font-bold ${getRiskColor(client.riskScore)}`}>
-                {getRiskText(client.riskScore)}
-              </div>
-              <div className="text-gray-500 font-medium">
-                (Score: {client.riskScore})
-              </div>
+      {/* Main 3-up grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Retention Risk Box */}
+        <div className="bg-white rounded-2xl shadow border p-6 flex flex-col">
+          {/* Only show chart w/ label and score */}
+          <ClientRiskChart score={client.riskScore} size={85} />
+          <div className="mt-5 text-sm">
+            <div>{riskBreakdown.summary}</div>
+            {/* Flags */}
+            <div className="mt-3">
+              <div className="font-bold text-red-600 mb-1">Red Flags:</div>
+              <ul className="space-y-1">
+                {riskBreakdown.flags.map(flag => (
+                  <li key={flag.title} className="flex items-start gap-2">
+                    <span className="text-red-600">•</span>
+                    <div>
+                      <span className="font-bold">{flag.title}</span>
+                      <span className="ml-2 text-gray-500 text-xs">({flag.date})</span>
+                      <div className="text-gray-600 text-xs">{flag.desc}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-          <div className="text-gray-700 mb-2">{retentionDetail.explanation}</div>
-          <div>
-            <div className="font-bold text-red-600 mb-1">Red Flags:</div>
-            <ul className="list-disc ml-5 space-y-1 text-sm">
-              {retentionDetail.flags.map((flag, i) => (
-                <li key={i}>
-                  <span className="font-semibold">{flag.title}</span>{" "}
-                  <span className="text-gray-600">({flag.date})</span>
-                  <div className="text-gray-700">{flag.detail}</div>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        {/* Right: Recent Communication and Tasks Due */}
-        <div className="flex flex-col gap-6 h-full">
-          {/* Recent Communication */}
-          <div className="bg-white rounded-2xl shadow p-6 flex-1 flex flex-col min-h-[120px]">
-            <div className="font-bold mb-2 text-[#172A3A]">Recent Communication</div>
-            <ul className="space-y-2 text-sm">
-              {recentComms.map((c, idx) => (
-                <li key={idx} className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    {c.type === "sms" && <MessageCircle size={16} className="text-blue-400" />}
-                    {c.type === "email" && <Mail size={16} className="text-green-500" />}
-                    {c.type === "newsletter" && <Mail size={16} className="text-purple-500" />}
-                    <div>
-                      <div className="font-medium">{c.text}</div>
-                      <div className="text-gray-400 text-xs">{c.date}</div>
-                    </div>
-                  </div>
-                  <button
-                    className="text-blue-600 font-semibold text-xs hover:underline"
-                    onClick={() => alert("Open thread/newsletter (demo)")}
-                  >
+        {/* Recent Communication */}
+        <div className="bg-white rounded-2xl shadow border p-6 flex flex-col">
+          <div className="font-bold text-[#172A3A] mb-2">Recent Communication</div>
+          <ul className="space-y-3 text-sm">
+            {communications.map((com, idx) => (
+              <li key={idx} className="flex items-center justify-between">
+                <div>
+                  <span>{com.icon}</span>{" "}
+                  <span>{com.desc}</span>
+                  <span className="ml-2 text-gray-400 text-xs">{com.date}</span>
+                </div>
+                {com.view && (
+                  <button className="ml-4 text-blue-600 text-xs font-semibold hover:underline">
                     View
                   </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Tasks Due */}
-          <div className="bg-white rounded-2xl shadow p-6 flex-1 flex flex-col min-h-[120px]">
-            <div className="font-bold mb-2 text-[#172A3A]">Tasks Due</div>
-            <ul className="space-y-2 text-sm">
-              {tasksDue.map((t, idx) => (
-                <li key={idx} className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    {t.type === "call" && <Phone size={16} className="text-green-600" />}
-                    {t.type === "sms" && <MessageCircle size={16} className="text-blue-500" />}
-                    {t.type === "calendar" && <CalendarClock size={16} className="text-purple-500" />}
-                    <div>
-                      <div className="font-medium">{t.text}</div>
-                      <div className="text-gray-400 text-xs">{t.due}</div>
-                    </div>
-                  </div>
-                  <button
-                    className="text-blue-600 font-semibold text-xs hover:underline"
-                    onClick={() => alert("Task completed (demo)")}
-                  >
-                    Complete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Tasks Due */}
+        <div className="bg-white rounded-2xl shadow border p-6 flex flex-col">
+          <div className="font-bold text-[#172A3A] mb-2">Tasks Due</div>
+          <ul className="space-y-3 text-sm">
+            {tasks.map((task, idx) => (
+              <li key={idx} className="flex items-center justify-between">
+                <div>
+                  <span>{task.icon}</span>{" "}
+                  <span>{task.label}</span>
+                  <span className="ml-2 text-gray-400 text-xs">{task.due}</span>
+                </div>
+                <button className="ml-4 text-blue-600 text-xs font-semibold hover:underline" onClick={task.action}>
+                  Complete
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      {/* Bottom Half: Client Detail Card (Full Width) */}
+      {/* Detail Card fills lower half */}
       <ClientDetailCard client={client} />
 
       {/* Modals */}
