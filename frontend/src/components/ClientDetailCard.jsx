@@ -1,75 +1,99 @@
 // /frontend/src/components/ClientDetailCard.jsx
-import React from "react";
+import React, { useState } from "react";
+import { Edit2, Save, X, Plus } from "lucide-react";
 
-const ClientDetailCard = ({ client }) => (
-  <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 flex flex-col md:flex-row gap-12">
-    {/* Left: Contact, carrier/plan, doctors */}
-    <div className="flex-1 space-y-2 text-lg">
-      <div><span className="font-bold">📅 DOB:</span> {client.dob}</div>
-      <div><span className="font-bold">📧 Email:</span> {client.email}</div>
-      <div><span className="font-bold">📞 Phone:</span> {client.phone}</div>
-      <div>
-        <span className="font-bold">🏠 Address:</span> {client.address}, {client.city}, {client.state} {client.zip}
-      </div>
-      <div><span className="font-bold">🗓️ Effective Date:</span> {client.effectiveDate}</div>
-      <div><span className="font-bold">🗣️ Preferred Language:</span> {client.preferredLanguage}</div>
-      <div><span className="font-bold">🏥 Carrier:</span> {client.carrier}</div>
-      <div><span className="font-bold">💳 Plan:</span> {client.plan}</div>
-      <div><span className="font-bold">👨‍⚕️ Primary Care:</span> {client.primaryCare}</div>
-      <div><span className="font-bold">👩‍⚕️ Specialists:</span> {client.specialists}</div>
-      <div><span className="font-bold">💊 Medications:</span> {client.medications}</div>
-    </div>
-    {/* Right: Uploads, SOA, Policies */}
-    <div className="flex-1 space-y-3 text-lg">
-      <div>
-        <span className="font-bold">📄 SOA:</span>{" "}
-        {client.soa?.onFile
-          ? <span className="text-green-600 font-bold">On File ({client.soa.signed})</span>
-          : <span className="text-red-600">Missing</span>
-        }
-      </div>
-      <div>
-        <span className="font-bold">📄 Permission to Contact:</span>{" "}
-        {client.ptc?.onFile
-          ? <span className="text-green-600 font-bold">On File ({client.ptc.signed})</span>
-          : <span className="text-red-600">Missing</span>
-        }
-      </div>
-      <div>
-        <span className="font-bold">📝 Enrollment Form:</span>{" "}
-        {client.enrollment?.onFile
-          ? <span className="text-green-600 font-bold">On File</span>
-          : <span className="text-red-600">Missing</span>
-        }
-      </div>
-      <div>
-        <span className="font-bold">📚 Policies:</span>{" "}
-        {client.policies && client.policies.length
-          ? (
-            <ul className="list-disc ml-6">
-              {client.policies.map((p, i) =>
-                <li key={i}>{p.carrier}: {p.plan} (Eff. {p.effective})</li>
-              )}
-            </ul>
-          )
-          : <span>No other policies.</span>
-        }
-      </div>
-      <div>
-        <span className="font-bold">📎 Uploaded Files:</span>{" "}
-        {client.uploads && client.uploads.length
-          ? (
-            <ul className="list-disc ml-6">
-              {client.uploads.map((f, i) =>
-                <li key={i}>{f.label}: {f.file} ({f.date})</li>
-              )}
-            </ul>
-          )
-          : <span>No uploads.</span>
-        }
-      </div>
-    </div>
+const EditableField = ({
+  label,
+  value,
+  onChange,
+  editing,
+  setEditing,
+  type = "text",
+  ...props
+}) => (
+  <div className="flex items-center gap-2">
+    <span className="font-bold">{label}</span>
+    {editing ? (
+      <>
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="border px-2 py-1 rounded text-base"
+          {...props}
+        />
+        <button onClick={() => setEditing(false)} className="text-green-600">
+          <Save size={18} />
+        </button>
+        <button onClick={() => setEditing(false)} className="text-gray-400">
+          <X size={18} />
+        </button>
+      </>
+    ) : (
+      <>
+        <span>{value || <span className="text-gray-400">—</span>}</span>
+        <button onClick={() => setEditing(true)} className="ml-1">
+          <Edit2 size={16} />
+        </button>
+      </>
+    )}
   </div>
 );
 
-export default ClientDetailCard;
+const ClientDetailCard = ({ client: origClient }) => {
+  // Local state for edit fields
+  const [client, setClient] = useState({ ...origClient });
+  const [editing, setEditing] = useState({}); // which fields are being edited
+
+  // Save/cancel actions could be connected to an API in production!
+  const handleChange = (key, value) => setClient(c => ({ ...c, [key]: value }));
+
+  // ----- Render -----
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 flex flex-col md:flex-row gap-12">
+      {/* Left: Info */}
+      <div className="flex-1 space-y-2 text-lg">
+        <EditableField
+          label="📅 DOB:"
+          value={client.dob}
+          editing={!!editing.dob}
+          setEditing={v => setEditing(e => ({ ...e, dob: v }))}
+          onChange={v => handleChange("dob", v)}
+        />
+        <EditableField
+          label="📧 Email:"
+          value={client.email}
+          editing={!!editing.email}
+          setEditing={v => setEditing(e => ({ ...e, email: v }))}
+          onChange={v => handleChange("email", v)}
+        />
+        <EditableField
+          label="📞 Phone:"
+          value={client.phone}
+          editing={!!editing.phone}
+          setEditing={v => setEditing(e => ({ ...e, phone: v }))}
+          onChange={v => handleChange("phone", v)}
+        />
+        <EditableField
+          label="🏠 Address:"
+          value={`${client.address}, ${client.city}, ${client.state} ${client.zip}`}
+          editing={!!editing.address}
+          setEditing={v => setEditing(e => ({ ...e, address: v }))}
+          onChange={v => {
+            // Optionally parse for real use!
+            const parts = v.split(",");
+            handleChange("address", parts[0]?.trim() || "");
+            handleChange("city", parts[1]?.trim() || "");
+            if (parts[2]) {
+              const [state, zip] = parts[2].trim().split(" ");
+              handleChange("state", state || "");
+              handleChange("zip", zip || "");
+            }
+          }}
+        />
+        <EditableField
+          label="🗓️ Effective Date:"
+          value={client.effectiveDate}
+          editing={!!editing.effectiveDate}
+          setEditing={v => setEditing(e => ({ ...e, effectiveDate: v }))}
+          onChange={v => handleChange("effectiveDate", v)}
