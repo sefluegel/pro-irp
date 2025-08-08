@@ -1,21 +1,21 @@
-// /frontend/src/pages/Tasks.jsx
 import React, { useState } from "react";
 import {
   Plus,
   CheckCircle2,
   Trash2,
-  Columns2,
+  Table2,       // Use Table2 instead of Columns2
   Filter,
   Search,
   User2,
   Phone,
   MessageCircle,
   CalendarClock,
-  MoreHorizontal
+  MoreHorizontal,
+  Mail
 } from "lucide-react";
 
 const DEMO_TASKS = [
-  // Due Today
+  // ... (same as before)
   {
     id: 1,
     status: "dueToday",
@@ -42,7 +42,6 @@ const DEMO_TASKS = [
     assigned: ["Scott Fluegel"],
     complete: false,
   },
-  // Upcoming
   {
     id: 3,
     status: "upcoming",
@@ -56,7 +55,6 @@ const DEMO_TASKS = [
     assigned: ["Cherie Fluegel"],
     complete: false,
   },
-  // Overdue
   {
     id: 4,
     status: "overdue",
@@ -207,7 +205,7 @@ const Tasks = () => {
               className="flex items-center gap-1 border px-3 py-1 rounded shadow-sm bg-white text-sm"
               onClick={() => setShowColumns(v => !v)}
             >
-              <Columns2 size={16} /> Columns
+              <Table2 size={16} /> Columns
             </button>
             <div className="relative">
               <Search size={16} className="absolute left-2 top-2 text-gray-400" />
