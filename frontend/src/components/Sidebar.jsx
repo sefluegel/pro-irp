@@ -1,4 +1,5 @@
 // /frontend/src/components/Sidebar.jsx
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -7,14 +8,11 @@ import {
   FileText,
   ListChecks,
   Settings,
+  Smile,
   LogIn,
   UserPlus,
-  // Mail,
-  // MessageSquare,
-  // Bell
 } from "lucide-react";
 
-// Dummy unread counts for demo (replace with real props/state as needed)
 const unread = {
   messages: 2,
   emails: 1,
@@ -24,23 +22,23 @@ const unread = {
 const Sidebar = () => {
   const location = useLocation();
 
-  // "Dashboard Mode" if on /dashboard or its subpages
   const dashboardMode = [
     "/dashboard",
     "/clients",
     "/tasks",
-    "/settings"
+    "/settings",
+    "/automations",   // <--- Add automations here!
   ].some(path => location.pathname.startsWith(path));
 
-  // Links for dashboard (main app)
+  // Add Automations to your dashboard links
   const dashboardLinks = [
-    { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-    { to: "/clients",   label: "Clients",   icon: <Users size={20} /> },
-    { to: "/tasks",     label: "Tasks",     icon: <ListChecks size={20} /> },
-    { to: "/settings",  label: "Settings",  icon: <Settings size={20} /> },
+    { to: "/dashboard",   label: "Dashboard",   icon: <LayoutDashboard size={20} /> },
+    { to: "/clients",     label: "Clients",     icon: <Users size={20} /> },
+    { to: "/tasks",       label: "Tasks",       icon: <ListChecks size={20} /> },
+    { to: "/automations", label: "Automations", icon: <Smile size={20} /> }, // <--- Automations link
+    { to: "/settings",    label: "Settings",    icon: <Settings size={20} /> },
   ];
 
-  // Links for authentication pages
   const authLinks = [
     { to: "/",        label: "Login",    icon: <LogIn size={20} /> },
     { to: "/signup",  label: "Sign Up",  icon: <UserPlus size={20} /> },
@@ -53,7 +51,6 @@ const Sidebar = () => {
       className="w-64 min-h-screen flex flex-col font-[Inter] shadow-2xl"
       style={{ background: "#172A3A" }}
     >
-      {/* Logo/Home */}
       <Link
         to="/dashboard"
         className="flex flex-col items-center gap-2 px-6 py-8 border-b"
