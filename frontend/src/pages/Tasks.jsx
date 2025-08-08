@@ -1,406 +1,392 @@
 // /frontend/src/pages/Tasks.jsx
 import React, { useState } from "react";
 import {
-  CheckCircle,
-  Clock,
+  Plus,
+  CheckCircle2,
   Trash2,
-  Search,
+  Columns2,
   Filter,
-  SlidersHorizontal,
-  User,
-  Mail,
+  Search,
+  User2,
   Phone,
   MessageCircle,
-  Plus,
-  CalendarDays,
-  Star,
-  MoreHorizontal,
-  ChevronDown,
+  CalendarClock,
+  MoreHorizontal
 } from "lucide-react";
 
-const MOCK_TASKS = [
+const DEMO_TASKS = [
+  // Due Today
   {
     id: 1,
-    title: "Call client for policy review",
-    contact: "Jane Doe",
-    due: "2025-08-07",
-    time: "10:00",
-    status: "Due Today",
+    status: "dueToday",
     type: "call",
-    priority: "High",
-    tags: ["Review", "Medicare"],
-    owner: "Scott Fluegel",
-    assignedTo: ["Scott Fluegel", "Spencer"],
+    title: "Call client for policy review",
     description: "Annual review—remind client about new plan options.",
+    contact: "Jane Doe",
+    dueDate: "2025-08-07",
+    dueTime: "10:00",
+    priority: "High",
+    assigned: ["Scott Fluegel", "Spencer"],
+    complete: false,
   },
   {
     id: 2,
-    title: "Send happy birthday SMS",
-    contact: "Zain Marketing",
-    due: "2025-08-07",
-    time: "09:30",
-    status: "Due Today",
+    status: "dueToday",
     type: "sms",
-    priority: "Low",
-    tags: ["Birthday"],
-    owner: "You",
-    assignedTo: ["Scott Fluegel"],
+    title: "Send happy birthday SMS",
     description: "",
+    contact: "Zain Marketing",
+    dueDate: "2025-08-07",
+    dueTime: "09:30",
+    priority: "Low",
+    assigned: ["Scott Fluegel"],
+    complete: false,
   },
+  // Upcoming
   {
     id: 3,
-    title: "Complete SOA for Janik",
-    contact: "Janik Lilienthal",
-    due: "2025-08-08",
-    time: "15:00",
-    status: "Upcoming",
+    status: "upcoming",
     type: "email",
-    priority: "Medium",
-    tags: ["Compliance", "SOA"],
-    owner: "You",
-    assignedTo: ["Cherie Fluegel"],
+    title: "Complete SOA for Janik",
     description: "",
+    contact: "Janik Lilienthal",
+    dueDate: "2025-08-08",
+    dueTime: "15:00",
+    priority: "Medium",
+    assigned: ["Cherie Fluegel"],
+    complete: false,
   },
+  // Overdue
   {
     id: 4,
-    title: "Check-in call: new Rx alert",
-    contact: "Scott Fluegel",
-    due: "2025-08-05",
-    time: "16:00",
-    status: "Overdue",
+    status: "overdue",
     type: "call",
-    priority: "High",
-    tags: ["Rx", "Retention"],
-    owner: "Spencer",
-    assignedTo: ["Spencer"],
+    title: "Check-in call: new Rx alert",
     description: "Lisinopril prescribed, tier 4. Discuss with client.",
+    contact: "Scott Fluegel",
+    dueDate: "2025-08-05",
+    dueTime: "16:00",
+    priority: "High",
+    assigned: ["Spencer"],
+    complete: false,
   },
 ];
 
-// Priority color mapping
 const PRIORITY_COLORS = {
-  High: "bg-red-100 text-red-800",
+  High: "bg-red-100 text-red-700",
   Medium: "bg-yellow-100 text-yellow-700",
-  Low: "bg-green-100 text-green-800",
+  Low: "bg-green-100 text-green-700",
 };
 
-// Tag color mapping
-const TAG_COLORS = {
-  Review: "bg-blue-100 text-blue-800",
-  Medicare: "bg-purple-100 text-purple-800",
-  Birthday: "bg-pink-100 text-pink-800",
-  Compliance: "bg-gray-100 text-gray-700",
-  SOA: "bg-yellow-100 text-yellow-800",
-  Rx: "bg-indigo-100 text-indigo-800",
-  Retention: "bg-teal-100 text-teal-800",
-};
-
-// Task type icons
 const TYPE_ICONS = {
-  call: <Phone size={16} className="text-green-600" />,
-  sms: <MessageCircle size={16} className="text-blue-600" />,
-  email: <Mail size={16} className="text-yellow-700" />,
-  meeting: <CalendarDays size={16} className="text-purple-600" />,
+  call: <Phone size={16} className="text-green-500" />,
+  sms: <MessageCircle size={16} className="text-blue-500" />,
+  email: <Mail size={16} className="text-pink-600" />,
+  calendar: <CalendarClock size={16} className="text-purple-500" />,
 };
 
-const STATUS_SECTIONS = [
-  { key: "Due Today", label: "Due Today" },
-  { key: "Upcoming", label: "Upcoming" },
-  { key: "Overdue", label: "Overdue" },
-  { key: "Completed", label: "Completed" },
-];
+const SECTION_LABELS = {
+  dueToday: "Due Today",
+  upcoming: "Upcoming",
+  overdue: "Overdue",
+};
 
 const Tasks = () => {
-  const [tasks, setTasks] = useState(MOCK_TASKS);
-  const [selected, setSelected] = useState([]);
+  const [tasks, setTasks] = useState(DEMO_TASKS);
+  const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [showColumns, setShowColumns] = useState(false);
 
-  // Filter, Search, Sort logic
-  const filteredTasks = tasks.filter(task =>
-    (filterStatus === "All" || task.status === filterStatus) &&
+  const columns = [
+    { key: "select", label: "" },
+    { key: "type", label: "" },
+    { key: "title", label: "Task" },
+    { key: "contact", label: "Contact" },
+    { key: "dueDate", label: "Due" },
+    { key: "priority", label: "Priority" },
+    { key: "assigned", label: "Assigned" },
+    { key: "actions", label: "" },
+  ];
+
+  const [visibleCols, setVisibleCols] = useState(columns.map(c => c.key));
+
+  // Utility: filter and sort tasks by section/status
+  const filteredTasks = tasks.filter(t =>
+    (filter === "all" || t.status === filter) &&
     (search === "" ||
-      task.title.toLowerCase().includes(search.toLowerCase()) ||
-      task.contact.toLowerCase().includes(search.toLowerCase()) ||
-      (task.tags && task.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase())))
-    )
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      t.contact.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const groupByStatus = STATUS_SECTIONS.reduce((acc, s) => {
-    acc[s.key] = filteredTasks.filter(t => t.status === s.key);
-    return acc;
-  }, {});
+  // Group by section
+  const sections = [
+    {
+      key: "dueToday",
+      tasks: filteredTasks.filter(t => t.status === "dueToday"),
+    },
+    {
+      key: "upcoming",
+      tasks: filteredTasks.filter(t => t.status === "upcoming"),
+    },
+    {
+      key: "overdue",
+      tasks: filteredTasks.filter(t => t.status === "overdue"),
+    },
+  ];
 
-  // Bulk actions
-  const handleSelectAll = e =>
-    setSelected(e.target.checked ? filteredTasks.map(t => t.id) : []);
-  const handleSelect = id =>
-    setSelected(sel => sel.includes(id) ? sel.filter(i => i !== id) : [...sel, id]);
-  const handleBulkComplete = () => {
-    setTasks(ts => ts.map(t => selected.includes(t.id) ? { ...t, status: "Completed" } : t));
-    setSelected([]);
+  // Demo: column toggler
+  const handleToggleCol = key => {
+    setVisibleCols(cols =>
+      cols.includes(key)
+        ? cols.filter(c => c !== key)
+        : [...cols, key]
+    );
   };
-  const handleBulkDelete = () => {
-    setTasks(ts => ts.filter(t => !selected.includes(t.id)));
-    setSelected([]);
-  };
-
-  // Task quick actions (simulate for demo)
-  const handleComplete = id => setTasks(ts => ts.map(t => t.id === id ? { ...t, status: "Completed" } : t));
-  const handleSnooze = id => setTasks(ts => ts.map(t => t.id === id ? { ...t, due: "2025-08-08", status: "Upcoming" } : t));
-  const handleDelete = id => setTasks(ts => ts.filter(t => t.id !== id));
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10 font-[Inter]">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-[#172A3A]">Tasks</h1>
-          <p className="text-gray-500">Track, manage, and complete your upcoming activities.</p>
+    <div>
+      <div className="mb-2">
+        <h1 className="text-3xl font-extrabold text-[#172A3A]">Tasks</h1>
+        <div className="text-gray-500 mb-3">
+          Track, manage, and complete your upcoming activities.
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 mb-4">
           <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-[#FFB800] text-[#172A3A] px-4 py-2 rounded-xl font-bold hover:bg-yellow-400 transition"
-          >
-            <Plus size={18} /> Add Task
-          </button>
-          <button
-            onClick={handleBulkComplete}
-            disabled={!selected.length}
-            className="flex items-center gap-2 bg-green-100 border border-green-200 px-4 py-2 rounded-xl font-bold hover:bg-green-200 text-green-900 transition"
-          >
-            <CheckCircle size={18} /> Complete
-          </button>
-          <button
-            onClick={handleBulkDelete}
-            disabled={!selected.length}
-            className="flex items-center gap-2 bg-white border px-4 py-2 rounded-xl font-bold hover:bg-gray-50 transition"
-          >
-            <Trash2 size={18} /> Delete
-          </button>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-        <div className="flex gap-2 flex-wrap">
-          <button
-            className={`flex items-center gap-1 px-3 py-1 rounded border text-xs font-semibold shadow-sm
-              ${filterStatus === "All" ? "bg-[#172A3A] text-white" : "bg-white hover:bg-gray-100 text-[#172A3A]"}
-            `}
-            onClick={() => setFilterStatus("All")}
+            className={`px-3 py-1 rounded font-semibold text-sm ${
+              filter === "all"
+                ? "bg-[#FFB800] text-[#172A3A]"
+                : "bg-white text-gray-700 border"
+            }`}
+            onClick={() => setFilter("all")}
           >
             All
           </button>
-          {STATUS_SECTIONS.map(s => (
+          <button
+            className={`px-3 py-1 rounded font-semibold text-sm ${
+              filter === "dueToday"
+                ? "bg-[#FFB800] text-[#172A3A]"
+                : "bg-white text-gray-700 border"
+            }`}
+            onClick={() => setFilter("dueToday")}
+          >
+            Due Today
+          </button>
+          <button
+            className={`px-3 py-1 rounded font-semibold text-sm ${
+              filter === "upcoming"
+                ? "bg-[#FFB800] text-[#172A3A]"
+                : "bg-white text-gray-700 border"
+            }`}
+            onClick={() => setFilter("upcoming")}
+          >
+            Upcoming
+          </button>
+          <button
+            className={`px-3 py-1 rounded font-semibold text-sm ${
+              filter === "overdue"
+                ? "bg-[#FFB800] text-[#172A3A]"
+                : "bg-white text-gray-700 border"
+            }`}
+            onClick={() => setFilter("overdue")}
+          >
+            Overdue
+          </button>
+          <button
+            className={`px-3 py-1 rounded font-semibold text-sm ${
+              filter === "completed"
+                ? "bg-[#FFB800] text-[#172A3A]"
+                : "bg-white text-gray-700 border"
+            }`}
+            onClick={() => setFilter("completed")}
+            disabled
+          >
+            Completed
+          </button>
+          <div className="ml-auto flex gap-2">
             <button
-              key={s.key}
-              className={`flex items-center gap-1 px-3 py-1 rounded border text-xs font-semibold shadow-sm
-                ${filterStatus === s.key ? "bg-[#FFB800] text-[#172A3A]" : "bg-white hover:bg-gray-100 text-[#172A3A]"}
-              `}
-              onClick={() => setFilterStatus(s.key)}
+              className="flex items-center gap-1 border px-3 py-1 rounded shadow-sm bg-white text-sm"
+              onClick={() => setShowColumns(v => !v)}
             >
-              {s.label}
+              <Columns2 size={16} /> Columns
             </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="flex items-center gap-1 px-3 py-1 rounded bg-white border shadow-sm hover:bg-gray-50 text-xs"
-            onClick={() => alert("Column chooser coming soon!")}
-          >
-            <SlidersHorizontal size={14} /> Columns
-          </button>
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search tasks..."
-              className="pl-8 pr-2 py-1 rounded border shadow-sm text-xs"
-            />
+            <div className="relative">
+              <Search size={16} className="absolute left-2 top-2 text-gray-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-8 pr-2 py-1 rounded border text-sm w-44"
+                placeholder="Search tasks..."
+              />
+            </div>
+            <button className="flex items-center gap-1 border px-3 py-1 rounded shadow-sm bg-white text-sm" disabled>
+              <Filter size={16} /> Filters
+            </button>
+            <button className="bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] px-4 py-2 font-bold rounded-lg shadow-sm flex items-center gap-2">
+              <Plus size={18} /> Add Task
+            </button>
+            <button className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 font-bold rounded-lg shadow-sm flex items-center gap-2">
+              <CheckCircle2 size={18} /> Complete
+            </button>
+            <button className="bg-white hover:bg-gray-100 text-red-600 px-4 py-2 font-bold rounded-lg shadow-sm flex items-center gap-2 border">
+              <Trash2 size={18} /> Delete
+            </button>
           </div>
-          <button
-            onClick={() => alert("Filters coming soon!")}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-white border shadow-sm hover:bg-gray-50 text-xs"
-          >
-            <Filter size={14} /> Filters
-          </button>
         </div>
+        {/* Column chooser */}
+        {showColumns && (
+          <div className="absolute right-10 top-32 bg-white border shadow-lg rounded p-4 z-20">
+            <div className="font-bold mb-2">Show Columns</div>
+            {columns.map(col => (
+              <label key={col.key} className="flex items-center gap-2 mb-1 text-sm">
+                <input
+                  type="checkbox"
+                  checked={visibleCols.includes(col.key)}
+                  disabled={["select", "title", "actions"].includes(col.key)}
+                  onChange={() => handleToggleCol(col.key)}
+                />
+                {col.label || col.key}
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* TASK LIST */}
-      {STATUS_SECTIONS.map(({ key: sectionKey, label }) => (
-        groupByStatus[sectionKey]?.length > 0 && (
-          <div key={sectionKey} className="mb-8">
-            <div className="flex items-center gap-2 mb-2">
-              {sectionKey === "Overdue" && <Clock size={18} className="text-red-400" />}
-              {sectionKey === "Due Today" && <Star size={18} className="text-yellow-500" />}
-              <h2 className="text-lg font-bold text-[#172A3A]">{label}</h2>
-              <span className="text-xs text-gray-400 font-medium">{groupByStatus[sectionKey].length} task{groupByStatus[sectionKey].length > 1 ? "s" : ""}</span>
-            </div>
-            <div className="bg-white rounded-xl shadow divide-y">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-[#172A3A] bg-gray-50">
-                    <th className="w-6 px-2 py-2">
-                      <input
-                        type="checkbox"
-                        checked={selected.length && groupByStatus[sectionKey].every(t => selected.includes(t.id))}
-                        onChange={e =>
-                          setSelected(sel => e.target.checked
-                            ? [...sel, ...groupByStatus[sectionKey].map(t => t.id).filter(id => !sel.includes(id))]
-                            : sel.filter(id => !groupByStatus[sectionKey].some(t => t.id === id))
-                          )
-                        }
-                      />
-                    </th>
-                    <th className="w-10"></th>
-                    <th>Task</th>
-                    <th>Contact</th>
-                    <th>Due</th>
-                    <th>Priority</th>
-                    <th>Tags</th>
-                    <th>Assigned</th>
-                    <th className="w-32"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupByStatus[sectionKey].map(task => (
-                    <tr
-                      key={task.id}
-                      className={`hover:bg-yellow-50 ${task.status === "Overdue" ? "bg-red-50" : ""}`}
-                    >
-                      <td className="px-2 py-2">
-                        <input
-                          type="checkbox"
-                          checked={selected.includes(task.id)}
-                          onChange={() => handleSelect(task.id)}
-                        />
-                      </td>
-                      <td className="px-2 text-center">
-                        {TYPE_ICONS[task.type]}
-                      </td>
-                      <td className="px-2 py-2 font-bold">
-                        {task.title}
-                        {task.description && (
-                          <div className="text-gray-400 text-xs font-normal">{task.description}</div>
-                        )}
-                      </td>
-                      <td className="px-2 py-2">{task.contact}</td>
-                      <td className="px-2 py-2">
-                        <span className="font-medium">
-                          {task.due} <span className="text-xs text-gray-400">{task.time}</span>
-                        </span>
-                      </td>
-                      <td className="px-2 py-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${PRIORITY_COLORS[task.priority]}`}>{task.priority}</span>
-                      </td>
-                      <td className="px-2 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {task.tags.map(tag => (
-                            <span key={tag} className={`px-2 py-0.5 rounded-full text-xs font-bold ${TAG_COLORS[tag] || "bg-gray-100 text-gray-600"}`}>
-                              {tag}
-                            </span>
+      {/* Tasks Sections */}
+      <div>
+        {sections.map(
+          section =>
+            section.tasks.length > 0 && (
+              <div key={section.key} className="mb-8">
+                <div
+                  className={`flex items-center text-lg font-bold mb-1 ${
+                    section.key === "dueToday"
+                      ? "text-yellow-700"
+                      : section.key === "overdue"
+                      ? "text-red-600"
+                      : "text-gray-700"
+                  }`}
+                >
+                  {section.key === "dueToday" && <span className="mr-1">⭐</span>}
+                  {section.key === "overdue" && <span className="mr-1">⏺️</span>}
+                  {SECTION_LABELS[section.key]}{" "}
+                  <span className="ml-1 text-sm font-normal text-gray-400">
+                    {section.tasks.length} task{section.tasks.length !== 1 && "s"}
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded-2xl shadow bg-white">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {columns
+                          .filter(c => visibleCols.includes(c.key))
+                          .map(col => (
+                            <th key={col.key} className="px-3 py-2 font-bold text-left">
+                              {col.label}
+                            </th>
                           ))}
-                        </div>
-                      </td>
-                      <td className="px-2 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {task.assignedTo.map(user => (
-                            <span key={user} className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1">
-                              <User size={12} /> {user}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-2 py-2 text-right flex gap-2">
-                        {/* Actions: Complete, Snooze, Delete, More */}
-                        {task.status !== "Completed" && (
-                          <button
-                            className="bg-green-100 hover:bg-green-200 text-green-900 rounded px-2 py-1 text-xs font-semibold"
-                            onClick={() => handleComplete(task.id)}
-                            title="Complete Task"
-                          >
-                            <CheckCircle size={16} />
-                          </button>
-                        )}
-                        {task.status !== "Completed" && (
-                          <button
-                            className="bg-gray-100 hover:bg-yellow-100 text-yellow-700 rounded px-2 py-1 text-xs font-semibold"
-                            onClick={() => handleSnooze(task.id)}
-                            title="Snooze to Tomorrow"
-                          >
-                            <Clock size={16} />
-                          </button>
-                        )}
-                        <button
-                          className="bg-white hover:bg-red-100 text-red-700 rounded px-2 py-1 text-xs font-semibold"
-                          onClick={() => handleDelete(task.id)}
-                          title="Delete Task"
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {section.tasks.map(task => (
+                        <tr
+                          key={task.id}
+                          className={
+                            section.key === "dueToday"
+                              ? "bg-yellow-50 border-b"
+                              : section.key === "overdue"
+                              ? "bg-red-50 border-b"
+                              : "border-b"
+                          }
                         >
-                          <Trash2 size={16} />
-                        </button>
-                        <button
-                          className="bg-white hover:bg-gray-200 text-gray-600 rounded px-2 py-1 text-xs font-semibold"
-                          onClick={() => alert("More options coming soon!")}
-                        >
-                          <MoreHorizontal size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-      ))}
-
-      {/* Quick Add Task Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-2xl w-[420px] max-w-[95vw] p-6 relative">
-            <button
-              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-black"
-              onClick={() => setShowAdd(false)}
-            >✕</button>
-            <h2 className="text-xl font-bold text-[#172A3A] mb-2">Add Task</h2>
-            <p className="text-gray-500 text-xs mb-3">(*Demo only, not connected)</p>
-            <form className="space-y-2">
-              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Task Title" />
-              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Contact" />
-              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Due Date" type="date" />
-              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Time" type="time" />
-              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Tags (comma separated)" />
-              <select className="w-full px-3 py-2 border rounded text-sm">
-                <option>Priority</option>
-                <option>High</option>
-                <option>Medium</option>
-                <option>Low</option>
-              </select>
-              <select className="w-full px-3 py-2 border rounded text-sm">
-                <option>Type</option>
-                <option value="call">Call</option>
-                <option value="sms">SMS</option>
-                <option value="email">Email</option>
-                <option value="meeting">Meeting</option>
-              </select>
-              <textarea className="w-full px-3 py-2 border rounded text-sm" placeholder="Description (optional)" />
-              <button
-                type="button"
-                className="w-full bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] font-bold py-2 rounded-xl shadow"
-                onClick={() => setShowAdd(false)}
-              >Save (Demo)</button>
-            </form>
-          </div>
-        </div>
-      )}
+                          {/* Select */}
+                          {visibleCols.includes("select") && (
+                            <td className="px-3 py-2">
+                              <input type="checkbox" />
+                            </td>
+                          )}
+                          {/* Type/Icon */}
+                          {visibleCols.includes("type") && (
+                            <td className="px-3 py-2">
+                              {TYPE_ICONS[task.type] || <User2 size={16} />}
+                            </td>
+                          )}
+                          {/* Title/description */}
+                          {visibleCols.includes("title") && (
+                            <td className="px-3 py-2">
+                              <div className="font-semibold">{task.title}</div>
+                              {task.description && (
+                                <div className="text-xs text-gray-500">
+                                  {task.description}
+                                </div>
+                              )}
+                            </td>
+                          )}
+                          {/* Contact */}
+                          {visibleCols.includes("contact") && (
+                            <td className="px-3 py-2">{task.contact}</td>
+                          )}
+                          {/* Due Date */}
+                          {visibleCols.includes("dueDate") && (
+                            <td className="px-3 py-2">
+                              {task.dueDate}
+                              {task.dueTime && (
+                                <span className="text-xs text-gray-400 ml-2">
+                                  {task.dueTime}
+                                </span>
+                              )}
+                            </td>
+                          )}
+                          {/* Priority */}
+                          {visibleCols.includes("priority") && (
+                            <td className="px-3 py-2">
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-xs font-bold ${PRIORITY_COLORS[task.priority]}`}
+                              >
+                                {task.priority}
+                              </span>
+                            </td>
+                          )}
+                          {/* Assigned */}
+                          {visibleCols.includes("assigned") && (
+                            <td className="px-3 py-2">
+                              <div className="flex gap-1 flex-wrap">
+                                {task.assigned.map(person => (
+                                  <span
+                                    key={person}
+                                    className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-semibold"
+                                  >
+                                    <User2 size={13} />
+                                    {person}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                          )}
+                          {/* Actions */}
+                          {visibleCols.includes("actions") && (
+                            <td className="px-3 py-2 text-right">
+                              <div className="flex gap-2">
+                                <button className="text-green-500 hover:text-green-700">
+                                  <CheckCircle2 size={16} />
+                                </button>
+                                <button className="text-red-500 hover:text-red-700">
+                                  <Trash2 size={16} />
+                                </button>
+                                <button className="text-gray-500 hover:text-blue-600">
+                                  <MoreHorizontal size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+        )}
+      </div>
     </div>
   );
 };
