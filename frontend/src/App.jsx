@@ -1,19 +1,19 @@
-// /frontend/src/pages/App.jsx
+// /frontend/src/App.jsx
 
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-import Sidebar from "../components/Sidebar";
-import Login from "./Login";
-import Signup from "./Signup";
-import ForgotPassword from "./ForgotPassword";
-import Dashboard from "./Dashboard";
-import Clients from "./Clients";
-import ClientProfile from "./ClientProfile";
-import Tasks from "./Tasks";
-import Settings from "./Settings";
-import Calendar from "./Calendar";
-import Automations from "./Automations";
+import Sidebar from "./components/Sidebar";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import Dashboard from "./pages/Dashboard";
+import Clients from "./pages/Clients";
+import ClientProfile from "./pages/ClientProfile";
+import Tasks from "./pages/Tasks";
+import Settings from "./pages/Settings";
+import Calendar from "./pages/Calendar";
+import Automations from "./pages/Automations";
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
@@ -88,4 +88,3 @@ const App = () => {
 };
 
 export default App;
-
