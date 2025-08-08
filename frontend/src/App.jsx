@@ -73,6 +73,7 @@ const App = () => {
             <Route path="/clients/:id" element={<ClientProfile clients={clients} />} />
 
             {/* Other pages */}
+            <Route path="/aep-wizard" element={<AEPWizard />} />
             <Route path="/policies" element={<Policies />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/settings" element={<Settings />} />
