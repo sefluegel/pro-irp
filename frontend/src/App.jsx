@@ -9,12 +9,13 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
+import Tasks from "./pages/Tasks";         // <-- Use your actual Tasks page!
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
 const Policies  = () => <div className="text-xl p-8">Policies (Coming Soon)</div>;
-const Tasks     = () => <div className="text-xl p-8">Tasks (Coming Soon)</div>;
 const Settings  = () => <div className="text-xl p-8">Settings (Coming Soon)</div>;
+// ---- Removed the old placeholder for Tasks! ----
 
 const App = () => {
   const [clients, setClients] = useState([
@@ -70,7 +71,7 @@ const App = () => {
 
             {/* Other placeholders */}
             <Route path="/policies" element={<Policies />} />
-            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/tasks" element={<Tasks />} />   {/* <-- This is now your actual Tasks page */}
             <Route path="/settings" element={<Settings />} />
 
             {/* 404 */}
