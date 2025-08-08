@@ -12,6 +12,7 @@ import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
 import Tasks from "./pages/Tasks";
 import AEPWizard from "./pages/AEPWizard";
+import OEPHub from "./pages/OEPHub";           // <-- NEW: OEP Hub import
 import Settings from "./pages/Settings";
 import Calendar from "./pages/Calendar";
 import Automations from "./pages/Automations";
@@ -29,6 +30,7 @@ const App = () => {
       plan: "PPO Advantage",
       phone: "555-123-4567",
       lastContact: "2024-07-10",
+      // optional: add effectiveDate/firstWithAgent later if you want OEPHub to pick this up
     },
   ]);
 
@@ -72,8 +74,9 @@ const App = () => {
             <Route path="/clients/new" element={<NewClient />} />
             <Route path="/clients/:id" element={<ClientProfile clients={clients} />} />
 
-            {/* Other pages */}
+            {/* Feature Pages */}
             <Route path="/aep-wizard" element={<AEPWizard />} />
+            <Route path="/oep" element={<OEPHub clients={clients} />} /> {/* <-- NEW: OEP Hub route */}
             <Route path="/policies" element={<Policies />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/settings" element={<Settings />} />
