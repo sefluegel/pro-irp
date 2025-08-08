@@ -13,7 +13,7 @@ import SectionLinks from "../components/SectionLinks";
 
 // --- Calendar imports ---
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, isToday } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -47,13 +47,26 @@ const DEMO_EVENTS = [
     end: new Date(new Date().setDate(new Date().getDate() + 1)),
     type: "Enrollment",
   },
+  {
+    id: 3,
+    title: "Follow Up: Cherie Fluegel",
+    start: new Date(new Date().setHours(15, 0, 0, 0)),
+    end: new Date(new Date().setHours(16, 0, 0, 0)),
+    type: "FollowUp",
+  },
 ];
+
 function eventPropGetter(event) {
   let colorClass = COLORS[event.id % COLORS.length];
   return {
     className: `rounded-xl font-bold px-2 ${colorClass}`,
     style: { border: "none" },
   };
+}
+
+// Only show events that are today
+function getTodayEvents(events) {
+  return events.filter(ev => isToday(ev.start));
 }
 
 const Dashboard = () => (
@@ -63,27 +76,6 @@ const Dashboard = () => (
   >
     <DashboardHeader />
     <div className="max-w-7xl mx-auto space-y-8">
-
-      {/* --- CALENDAR ADDED HERE --- */}
-      <div className="bg-white rounded-2xl shadow-md p-3 mb-6">
-        <div className="font-bold text-[#172A3A] text-lg mb-2 flex items-center gap-2">
-          <span role="img" aria-label="calendar">📅</span>
-          This Week’s Calendar
-        </div>
-        <BigCalendar
-          localizer={localizer}
-          events={DEMO_EVENTS}
-          startAccessor="start"
-          endAccessor="end"
-          defaultView={Views.WEEK}
-          views={['week']}
-          style={{ height: 320, fontSize: "0.98rem" }}
-          toolbar={false}
-          eventPropGetter={eventPropGetter}
-        />
-      </div>
-      {/* --- END CALENDAR --- */}
-
       <MetricCards />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -95,7 +87,32 @@ const Dashboard = () => (
         </div>
         {/* Sidebar widgets */}
         <div className="space-y-8">
+          {/* --- Today's Calendar Widget --- */}
+          <div className="bg-white rounded-2xl shadow-md p-4">
+            <div className="font-bold text-[#172A3A] text-lg mb-2 flex items-center gap-2">
+              <span role="img" aria-label="calendar">📅</span>
+              Today's Calendar
+            </div>
+            <BigCalendar
+              localizer={localizer}
+              events={getTodayEvents(DEMO_EVENTS)}
+              startAccessor="start"
+              endAccessor="end"
+              defaultView={Views.DAY}
+              views={['day']}
+              style={{ height: 260, fontSize: "0.98rem" }}
+              toolbar={false}
+              eventPropGetter={eventPropGetter}
+              min={new Date(new Date().setHours(6, 0, 0, 0))}
+              max={new Date(new Date().setHours(20, 0, 0, 0))}
+            />
+          </div>
+          {/* --- End Calendar Widget --- */}
+
+          {/* --- At Risk Clients (RiskList) --- */}
           <RiskList />
+          {/* --- End At Risk Clients --- */}
+
           <AlertsWidget />
           <QuickLookup />
           <SectionLinks />
@@ -106,4 +123,3 @@ const Dashboard = () => (
 );
 
 export default Dashboard;
-
