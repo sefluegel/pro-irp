@@ -1,4 +1,5 @@
 // /frontend/src/pages/App.jsx
+
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
@@ -11,8 +12,8 @@ import Clients from "./Clients";
 import ClientProfile from "./ClientProfile";
 import Tasks from "./Tasks";
 import Settings from "./Settings";
-import Calendar from "./Calendar";      // Calendar import
-import Automations from "./Automations"; // <-- Automations import
+import Calendar from "./Calendar";
+import Automations from "./Automations";
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
@@ -87,3 +88,4 @@ const App = () => {
 };
 
 export default App;
+
