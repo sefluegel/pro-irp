@@ -1,9 +1,11 @@
+// /frontend/src/pages/Tasks.jsx
+
 import React, { useState } from "react";
 import {
   Plus,
   CheckCircle2,
   Trash2,
-  Table2,       // Use Table2 instead of Columns2
+  Table2,
   Filter,
   Search,
   User2,
@@ -11,11 +13,10 @@ import {
   MessageCircle,
   CalendarClock,
   MoreHorizontal,
-  Mail
+  Mail,
 } from "lucide-react";
 
 const DEMO_TASKS = [
-  // ... (same as before)
   {
     id: 1,
     status: "dueToday",
@@ -84,9 +85,9 @@ const TYPE_ICONS = {
 };
 
 const SECTION_LABELS = {
+  overdue: "Overdue",
   dueToday: "Due Today",
   upcoming: "Upcoming",
-  overdue: "Overdue",
 };
 
 const Tasks = () => {
@@ -108,16 +109,21 @@ const Tasks = () => {
 
   const [visibleCols, setVisibleCols] = useState(columns.map(c => c.key));
 
-  // Utility: filter and sort tasks by section/status
-  const filteredTasks = tasks.filter(t =>
-    (filter === "all" || t.status === filter) &&
-    (search === "" ||
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
-      t.contact.toLowerCase().includes(search.toLowerCase()))
+  // Filter/search
+  const filteredTasks = tasks.filter(
+    t =>
+      (filter === "all" || t.status === filter) &&
+      (search === "" ||
+        t.title.toLowerCase().includes(search.toLowerCase()) ||
+        t.contact.toLowerCase().includes(search.toLowerCase()))
   );
 
-  // Group by section
+  // Group by section (Overdue always first)
   const sections = [
+    {
+      key: "overdue",
+      tasks: filteredTasks.filter(t => t.status === "overdue"),
+    },
     {
       key: "dueToday",
       tasks: filteredTasks.filter(t => t.status === "dueToday"),
@@ -126,13 +132,9 @@ const Tasks = () => {
       key: "upcoming",
       tasks: filteredTasks.filter(t => t.status === "upcoming"),
     },
-    {
-      key: "overdue",
-      tasks: filteredTasks.filter(t => t.status === "overdue"),
-    },
   ];
 
-  // Demo: column toggler
+  // Column toggler
   const handleToggleCol = key => {
     setVisibleCols(cols =>
       cols.includes(key)
@@ -190,11 +192,7 @@ const Tasks = () => {
             Overdue
           </button>
           <button
-            className={`px-3 py-1 rounded font-semibold text-sm ${
-              filter === "completed"
-                ? "bg-[#FFB800] text-[#172A3A]"
-                : "bg-white text-gray-700 border"
-            }`}
+            className={`px-3 py-1 rounded font-semibold text-sm`}
             onClick={() => setFilter("completed")}
             disabled
           >
@@ -347,33 +345,27 @@ const Tasks = () => {
                           {/* Assigned */}
                           {visibleCols.includes("assigned") && (
                             <td className="px-3 py-2">
-                              <div className="flex gap-1 flex-wrap">
-                                {task.assigned.map(person => (
+                              {task.assigned &&
+                                task.assigned.map((a, i) => (
                                   <span
-                                    key={person}
-                                    className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-semibold"
+                                    key={a}
+                                    className={`inline-block mr-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      i === 0
+                                        ? "bg-blue-100 text-blue-800"
+                                        : "bg-gray-100 text-gray-700"
+                                    }`}
                                   >
-                                    <User2 size={13} />
-                                    {person}
+                                    {a}
                                   </span>
                                 ))}
-                              </div>
                             </td>
                           )}
                           {/* Actions */}
                           {visibleCols.includes("actions") && (
-                            <td className="px-3 py-2 text-right">
-                              <div className="flex gap-2">
-                                <button className="text-green-500 hover:text-green-700">
-                                  <CheckCircle2 size={16} />
-                                </button>
-                                <button className="text-red-500 hover:text-red-700">
-                                  <Trash2 size={16} />
-                                </button>
-                                <button className="text-gray-500 hover:text-blue-600">
-                                  <MoreHorizontal size={16} />
-                                </button>
-                              </div>
+                            <td className="px-3 py-2">
+                              <button className="hover:bg-gray-100 rounded p-1">
+                                <MoreHorizontal size={16} />
+                              </button>
                             </td>
                           )}
                         </tr>
