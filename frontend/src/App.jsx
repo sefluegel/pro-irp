@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
 import Tasks from "./pages/Tasks";
+import AEPWizard from "./pages/AEPWizard";
 import Settings from "./pages/Settings";
 import Calendar from "./pages/Calendar";
 import Automations from "./pages/Automations";
