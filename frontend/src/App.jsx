@@ -9,13 +9,13 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
-import Tasks from "./pages/Tasks";         // <-- Use your actual Tasks page!
+import Tasks from "./pages/Tasks";
+import Settings from "./pages/Settings";
+import Calendar from "./pages/Calendar";  // <--- NEW: Calendar import
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
 const Policies  = () => <div className="text-xl p-8">Policies (Coming Soon)</div>;
-const Settings  = () => <div className="text-xl p-8">Settings (Coming Soon)</div>;
-// ---- Removed the old placeholder for Tasks! ----
 
 const App = () => {
   const [clients, setClients] = useState([
@@ -69,10 +69,11 @@ const App = () => {
             <Route path="/clients/new" element={<NewClient />} />
             <Route path="/clients/:id" element={<ClientProfile clients={clients} />} />
 
-            {/* Other placeholders */}
+            {/* Other pages */}
             <Route path="/policies" element={<Policies />} />
-            <Route path="/tasks" element={<Tasks />} />   {/* <-- This is now your actual Tasks page */}
+            <Route path="/tasks" element={<Tasks />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/calendar" element={<Calendar />} />    {/* <--- Calendar route */}
 
             {/* 404 */}
             <Route path="*" element={<div className="text-center text-xl">404 Not Found</div>} />
@@ -84,3 +85,4 @@ const App = () => {
 };
 
 export default App;
+
