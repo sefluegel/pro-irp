@@ -6,13 +6,12 @@ import {
   ChevronUp,
   ChevronDown,
   Users,
-  Baseball,
+  Award,   // <- replaced Baseball with Award
   Target,
 } from "lucide-react";
 
 // --- mock season data (10 players) ---
 const RAW_PLAYERS = [
-  // name, GP, AB, H, 2B, 3B, HR, BB, RBI, R, SB
   ["A. Martinez", 24, 78, 38, 7, 1, 12, 9, 41, 29, 6],
   ["B. Johnson", 22, 74, 31, 5, 2, 8, 12, 33, 27, 10],
   ["C. Lee", 25, 81, 26, 6, 1, 5, 20, 22, 19, 14],
@@ -33,16 +32,10 @@ function calcStats([name, GP, AB, H, _2B, _3B, HR, BB, RBI, R, SB]) {
   const OBP = AB + BB ? (H + BB) / (AB + BB) : 0;
   const SLG = AB ? TB / AB : 0;
   const OPS = OBP + SLG;
-  return {
-    name, GP, AB, H, _2B, _3B, HR, BB, RBI, R, SB,
-    AVG, OBP, SLG, OPS,
-  };
+  return { name, GP, AB, H, _2B, _3B, HR, BB, RBI, R, SB, AVG, OBP, SLG, OPS };
 }
 const PLAYERS = RAW_PLAYERS.map(calcStats);
 
-function pct(x) {
-  return (x * 100).toFixed(1) + "%";
-}
 function f3(n) {
   return n.toFixed(3);
 }
@@ -51,21 +44,17 @@ function f3(n) {
 export default function WiffleBall() {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState("OPS");
-  const [sortDir, setSortDir] = useState("desc"); // asc | desc
+  const [sortDir, setSortDir] = useState("desc");
   const year = new Date().getFullYear();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = q
-      ? PLAYERS.filter((p) => p.name.toLowerCase().includes(q))
-      : PLAYERS.slice();
+    const base = q ? PLAYERS.filter((p) => p.name.toLowerCase().includes(q)) : PLAYERS.slice();
     const dir = sortDir === "asc" ? 1 : -1;
     return base.sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
-      if (typeof av === "number" && typeof bv === "number") {
-        return (av - bv) * dir;
-      }
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
       return String(av).localeCompare(String(bv)) * dir;
     });
   }, [query, sortKey, sortDir]);
@@ -121,25 +110,15 @@ export default function WiffleBall() {
         <div className="2xl:col-span-2 flex flex-col gap-6">
           {/* Summary cards */}
           <section className="grid grid-cols-2 md:grid-cols-2 gap-4">
-            <SummaryCard
-              icon={<Users className="w-5 h-5" />}
-              label="Players"
-              value={PLAYERS.length}
-            />
-            <SummaryCard
-              icon={<Baseball className="w-5 h-5" />}
-              label="Total HR"
-              value={PLAYERS.reduce((s, p) => s + p.HR, 0)}
-            />
+            <SummaryCard icon={<Users className="w-5 h-5" />} label="Players" value={PLAYERS.length} />
+            <SummaryCard icon={<Award className="w-5 h-5" />} label="Total HR" value={PLAYERS.reduce((s, p) => s + p.HR, 0)} />
           </section>
 
           {/* Leaders */}
           <section className="bg-white rounded-3xl shadow p-6 border border-amber-100">
             <h3 className="text-xl font-bold text-[#172A3A] mb-4 flex items-center gap-2">
               <Trophy className="text-[#FFB800]" /> League Leaders
-              <span className="ml-2 text-xs text-gray-500">
-                (min {leaders.minAB} AB)
-              </span>
+              <span className="ml-2 text-xs text-gray-500">(min {leaders.minAB} AB)</span>
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <LeadersBlock title="AVG" rows={leaders.topAVG} fmt={(p) => f3(p.AVG)} />
