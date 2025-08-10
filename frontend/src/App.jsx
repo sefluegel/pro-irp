@@ -12,10 +12,11 @@ import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
 import Tasks from "./pages/Tasks";
 import AEPWizard from "./pages/AEPWizard";
-import OEPHub from "./pages/OEPHub";           // <-- NEW: OEP Hub import
+import OEPHub from "./pages/OEPHub";
 import Settings from "./pages/Settings";
 import Calendar from "./pages/Calendar";
 import Automations from "./pages/Automations";
+import WiffleBall from "./pages/WiffleBall"; // <-- NEW
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
@@ -34,9 +35,9 @@ const App = () => {
     },
   ]);
 
-  const addClient = client => setClients(cs => [...cs, { ...client, id: Date.now() }]);
-  const updateClient = updated =>
-    setClients(cs => cs.map(c => (c.id === updated.id ? { ...c, ...updated } : c)));
+  const addClient = (client) => setClients((cs) => [...cs, { ...client, id: Date.now() }]);
+  const updateClient = (updated) =>
+    setClients((cs) => cs.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
 
   return (
     <Router>
@@ -76,7 +77,8 @@ const App = () => {
 
             {/* Feature Pages */}
             <Route path="/aep-wizard" element={<AEPWizard />} />
-            <Route path="/oep" element={<OEPHub clients={clients} />} /> {/* <-- NEW: OEP Hub route */}
+            <Route path="/oep" element={<OEPHub clients={clients} />} />
+            <Route path="/wiffle-ball" element={<WiffleBall />} /> {/* <-- NEW */}
             <Route path="/policies" element={<Policies />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/settings" element={<Settings />} />
