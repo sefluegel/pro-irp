@@ -12,6 +12,7 @@ import {
   UserPlus,
   CalendarDays, // AEP Wizard icon
   Shield,       // OEP Hub icon
+  Trophy,       // Wiffle Ball icon
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -45,16 +46,18 @@ const Sidebar = () => {
     "/automations",
     "/aep-wizard",
     "/oep",
+    "/wiffle-ball", // <-- added
   ].some((path) => location.pathname.startsWith(path));
 
   const dashboardLinks = [
-    { to: "/dashboard",   label: "Dashboard",   icon: <LayoutDashboard size={20} /> },
-    { to: "/aep-wizard",  label: "AEP Wizard",  icon: <CalendarDays size={20} />, badge: `${daysUntilAEP}d` },
-    { to: "/oep",         label: "OEP Hub",     icon: <Shield size={20} />,       badge: oepBadge },
-    { to: "/clients",     label: "Clients",     icon: <Users size={20} /> },
-    { to: "/tasks",       label: "Tasks",       icon: <ListChecks size={20} /> },
-    { to: "/automations", label: "Automations", icon: <Smile size={20} /> },
-    { to: "/settings",    label: "Settings",    icon: <Settings size={20} /> },
+    { to: "/dashboard",    label: "Dashboard",    icon: <LayoutDashboard size={20} /> },
+    { to: "/aep-wizard",   label: "AEP Wizard",   icon: <CalendarDays size={20} />, badge: `${daysUntilAEP}d` },
+    { to: "/oep",          label: "OEP Hub",      icon: <Shield size={20} />,       badge: oepBadge },
+    { to: "/wiffle-ball",  label: "Wiffle Ball",  icon: <Trophy size={20} /> },     // <-- new link
+    { to: "/clients",      label: "Clients",      icon: <Users size={20} /> },
+    { to: "/tasks",        label: "Tasks",        icon: <ListChecks size={20} /> },
+    { to: "/automations",  label: "Automations",  icon: <Smile size={20} /> },
+    { to: "/settings",     label: "Settings",     icon: <Settings size={20} /> },
   ];
 
   const authLinks = [
