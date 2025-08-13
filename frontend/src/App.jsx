@@ -77,7 +77,8 @@ const App = () => {
             {/* Feature Pages */}
             <Route path="/aep-wizard" element={<AEPWizard />} />
             <Route path="/oep" element={<OEPHub clients={clients} />} />
-            <Route path="/wiffle-ball" element={<WiffleBall />} /> {/* <-- NEW */}
+            {/* Removed WiffleBall; keep a redirect to avoid broken deep links */}
+            <Route path="/wiffle-ball" element={<Navigate to="/dashboard" replace />} />
             <Route path="/policies" element={<Policies />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/settings" element={<Settings />} />
