@@ -57,7 +57,7 @@ const DEMO_EVENTS = [
 ];
 
 function eventPropGetter(event) {
-  let colorClass = COLORS[event.id % COLORS.length];
+  const colorClass = COLORS[event.id % COLORS.length];
   return {
     className: `rounded-xl font-bold px-2 ${colorClass}`,
     style: { border: "none" },
@@ -66,7 +66,7 @@ function eventPropGetter(event) {
 
 // Only show events that are today
 function getTodayEvents(events) {
-  return events.filter(ev => isToday(ev.start));
+  return events.filter((ev) => isToday(ev.start));
 }
 
 const Dashboard = () => (
@@ -81,10 +81,13 @@ const Dashboard = () => (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Main column */}
         <div className="md:col-span-2 space-y-8">
+          {/* Demo retention line & churn pie */}
           <RetentionCharts />
+
           <TaskList />
           <ActivityFeed />
         </div>
+
         {/* Sidebar widgets */}
         <div className="space-y-8">
           {/* --- Today's Calendar Widget --- */}
@@ -99,7 +102,7 @@ const Dashboard = () => (
               startAccessor="start"
               endAccessor="end"
               defaultView={Views.DAY}
-              views={['day']}
+              views={["day"]}
               style={{ height: 260, fontSize: "0.98rem" }}
               toolbar={false}
               eventPropGetter={eventPropGetter}
