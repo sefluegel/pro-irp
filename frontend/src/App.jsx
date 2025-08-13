@@ -16,7 +16,6 @@ import OEPHub from "./pages/OEPHub";
 import Settings from "./pages/Settings";
 import Calendar from "./pages/Calendar";
 import Automations from "./pages/Automations";
-import WiffleBall from "./pages/WiffleBall"; // <-- NEW
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
