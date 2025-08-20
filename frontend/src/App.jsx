@@ -1,7 +1,13 @@
 // /frontend/src/App.jsx
 
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
@@ -16,10 +22,33 @@ import OEPHub from "./pages/OEPHub";
 import Settings from "./pages/Settings";
 import Calendar from "./pages/Calendar";
 import Automations from "./pages/Automations";
+import ProIRPLanding from "./pages/ProIRPLanding"; // <-- NEW landing page
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
 const Policies  = () => <div className="text-xl p-8">Policies (Coming Soon)</div>;
+
+/** Layouts **/
+function PublicLayout() {
+  // No sidebar on landing/login/signup/forgot
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Outlet />
+    </div>
+  );
+}
+
+function AppLayout() {
+  // Sidebar for the main app pages
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 bg-gray-50 p-6">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
 
 const App = () => {
   const [clients, setClients] = useState([
@@ -34,62 +63,62 @@ const App = () => {
     },
   ]);
 
-  const addClient = (client) => setClients((cs) => [...cs, { ...client, id: Date.now() }]);
+  const addClient = (client) =>
+    setClients((cs) => [...cs, { ...client, id: Date.now() }]);
+
   const updateClient = (updated) =>
     setClients((cs) => cs.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
 
   return (
     <Router>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1 bg-gray-50 p-6">
-          <Routes>
-            {/* Auth */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot" element={<ForgotPassword />} />
+      <Routes>
+        {/* Public routes (no Sidebar) */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<ProIRPLanding />} />    {/* NEW landing at / */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot" element={<ForgotPassword />} />
+        </Route>
 
-            {/* Main App */}
-            <Route
-              path="/dashboard"
-              element={
-                <Dashboard
-                  clients={clients}
-                  onAddClient={addClient}
-                  onUpdateClient={updateClient}
-                />
-              }
-            />
-            <Route
-              path="/clients"
-              element={
-                <Clients
-                  clients={clients}
-                  onAddClient={addClient}
-                  onUpdateClient={updateClient}
-                />
-              }
-            />
-            <Route path="/clients/new" element={<NewClient />} />
-            <Route path="/clients/:id" element={<ClientProfile clients={clients} />} />
+        {/* App routes (with Sidebar) */}
+        <Route element={<AppLayout />}>
+          <Route
+            path="/dashboard"
+            element={
+              <Dashboard
+                clients={clients}
+                onAddClient={addClient}
+                onUpdateClient={updateClient}
+              />
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <Clients
+                clients={clients}
+                onAddClient={addClient}
+                onUpdateClient={updateClient}
+              />
+            }
+          />
+          <Route path="/clients/new" element={<NewClient />} />
+          <Route path="/clients/:id" element={<ClientProfile clients={clients} />} />
 
-            {/* Feature Pages */}
-            <Route path="/aep-wizard" element={<AEPWizard />} />
-            <Route path="/oep" element={<OEPHub clients={clients} />} />
-            {/* Removed WiffleBall; keep a redirect to avoid broken deep links */}
-            <Route path="/wiffle-ball" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/policies" element={<Policies />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/automations" element={<Automations />} />
+          <Route path="/aep-wizard" element={<AEPWizard />} />
+          <Route path="/oep" element={<OEPHub clients={clients} />} />
+          {/* Removed WiffleBall; keep a redirect to avoid broken deep links */}
+          <Route path="/wiffle-ball" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/policies" element={<Policies />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/automations" element={<Automations />} />
+        </Route>
 
-            {/* 404 */}
-            <Route path="*" element={<div className="text-center text-xl">404 Not Found</div>} />
-          </Routes>
-        </div>
-      </div>
+        {/* 404 */}
+        <Route path="*" element={<div className="text-center text-xl p-8">404 Not Found</div>} />
+      </Routes>
     </Router>
   );
 };
