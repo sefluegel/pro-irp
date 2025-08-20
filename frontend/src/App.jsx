@@ -10,6 +10,8 @@ import {
 } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
+
+// Auth / app pages
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -22,7 +24,13 @@ import OEPHub from "./pages/OEPHub";
 import Settings from "./pages/Settings";
 import Calendar from "./pages/Calendar";
 import Automations from "./pages/Automations";
-import ProIRPLanding from "./pages/ProIRPLanding"; // <-- NEW landing page
+
+// Marketing pages (new)
+import HomeSimple from "./pages/marketing/HomeSimple";
+import AgentsPage from "./pages/marketing/AgentsPage";
+import AgenciesPage from "./pages/marketing/AgenciesPage";
+import FmoPage from "./pages/marketing/FmoPage";
+import PricingPage from "./pages/marketing/PricingPage";
 
 // Placeholders for pages not built yet
 const NewClient = () => <div className="text-xl p-8">Add Client (Coming Soon)</div>;
@@ -30,7 +38,7 @@ const Policies  = () => <div className="text-xl p-8">Policies (Coming Soon)</div
 
 /** Layouts **/
 function PublicLayout() {
-  // No sidebar on landing/login/signup/forgot
+  // No sidebar on marketing/auth pages
   return (
     <div className="min-h-screen bg-gray-50">
       <Outlet />
@@ -74,7 +82,14 @@ const App = () => {
       <Routes>
         {/* Public routes (no Sidebar) */}
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<ProIRPLanding />} />    {/* NEW landing at / */}
+          {/* Marketing */}
+          <Route path="/" element={<HomeSimple />} />
+          <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/agencies" element={<AgenciesPage />} />
+          <Route path="/fmo" element={<FmoPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+
+          {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot" element={<ForgotPassword />} />
@@ -105,6 +120,7 @@ const App = () => {
           <Route path="/clients/new" element={<NewClient />} />
           <Route path="/clients/:id" element={<ClientProfile clients={clients} />} />
 
+          {/* Feature Pages */}
           <Route path="/aep-wizard" element={<AEPWizard />} />
           <Route path="/oep" element={<OEPHub clients={clients} />} />
           {/* Removed WiffleBall; keep a redirect to avoid broken deep links */}
