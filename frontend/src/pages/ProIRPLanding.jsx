@@ -1,19 +1,35 @@
-// src/pages/ProIRPLanding.jsx
-import React from "react";
+import React, { useState } from "react";
+
+/**
+ * Pro IRP — Landing Page (clean + ordered)
+ * Branding pulled from your app:
+ * - Gradient: navy → blue
+ * - White rounded cards with gold top-bar
+ * - Inter font
+ * Assets expected in:
+ *   /public/logo.png
+ *   /public/img/login-shot.png
+ *   /public/img/dashboard-shot.png
+ */
 
 const brand = {
+  gradFrom: "#1f3550",
+  gradTo: "#1672d6",
   navy: "#172A3A",
   slate: "#20344A",
   gold: "#FFB800",
-  gradFrom: "#376FDB",
-  gradTo: "#8FD0FF",
-  cardBg: "rgba(255,255,255,0.96)",
+  cardBG: "rgba(255,255,255,0.98)",
   border: "1px solid rgba(0,0,0,0.06)",
 };
 
-const container = "max-w-6xl w-full mx-auto px-4";
+const Container = ({ children, className = "" }) => (
+  <div className={`max-w-6xl w-full mx-auto px-4 ${className}`}>{children}</div>
+);
 
 export default function ProIRPLanding() {
+  const [agents, setAgents] = useState(5);
+  const agencyEstimate = Math.max(1, Number(agents || 0)) * 49.99;
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -23,29 +39,29 @@ export default function ProIRPLanding() {
       }}
     >
       {/* NAV */}
-      <header className="sticky top-0 z-40">
-        <div className={`${container}`}>
+      <header className="sticky top-0 z-40 backdrop-blur-sm">
+        <Container>
           <div
             className="flex items-center justify-between rounded-2xl mt-4 px-4 py-3 shadow-2xl"
-            style={{ background: brand.cardBg, border: brand.border }}
+            style={{ background: brand.cardBG, border: brand.border }}
           >
             <a href="/" className="flex items-center gap-3">
               <img
                 src="/logo.png"
                 alt="Pro IRP"
-                className="w-10 h-10 rounded-full shadow"
-                style={{ objectFit: "contain" }}
+                className="w-9 h-9 rounded-full shadow bg-white"
               />
-              <span className="font-extrabold text-lg" style={{ color: brand.navy }}>
-                Pro IRP
+              <span className="font-extrabold" style={{ color: brand.navy }}>
+                Pro <span style={{ color: brand.gold }}>IRP</span>
               </span>
             </a>
+
             <nav className="hidden md:flex items-center gap-6">
               <a className="hover:underline" href="#features" style={{ color: brand.slate }}>
                 Features
               </a>
-              <a className="hover:underline" href="#how" style={{ color: brand.slate }}>
-                How it works
+              <a className="hover:underline" href="#screens" style={{ color: brand.slate }}>
+                Screens
               </a>
               <a className="hover:underline" href="#pricing" style={{ color: brand.slate }}>
                 Pricing
@@ -61,6 +77,7 @@ export default function ProIRPLanding() {
                 Login
               </a>
             </nav>
+
             <a
               href="/login"
               className="md:hidden px-4 py-2 rounded-xl font-bold"
@@ -69,12 +86,13 @@ export default function ProIRPLanding() {
               Login
             </a>
           </div>
-        </div>
+        </Container>
       </header>
 
       {/* HERO */}
-      <section className="py-10 sm:py-14">
-        <div className={`${container} grid md:grid-cols-2 gap-8 items-center`}>
+      <section className="py-12 sm:py-16" id="hero">
+        <Container className="grid md:grid-cols-2 gap-8 items-center">
+          {/* Copy */}
           <div>
             <div
               className="bg-white rounded-3xl shadow-2xl p-8"
@@ -84,129 +102,74 @@ export default function ProIRPLanding() {
                 className="text-4xl sm:text-5xl font-extrabold tracking-tight"
                 style={{ color: brand.navy }}
               >
-                AI-Powered Predictive Medicare{" "}
-                <span style={{ color: brand.gold }}>Retention</span>
+                Next Generation Insurance <span style={{ color: brand.gold }}>Retention</span>
               </h1>
               <p className="mt-3 text-lg" style={{ color: brand.slate }}>
-                Pro IRP (Insurance Retention Partner) helps Medicare agents, agencies, and FMOs
-                reduce churn, protect renewals, and strengthen client relationships with
-                predictive analytics, real-time signals, and intelligent automation.
+                AI-powered retention for Medicare agents, agencies, and FMOs. Predict churn, automate
+                outreach, and protect renewals in a workflow your team will actually use.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <a
-                  href="#signup"
+                  href="#pricing"
                   className="px-5 py-3 rounded-xl font-bold shadow"
                   style={{ background: brand.gold, color: brand.navy }}
                 >
-                  Start Free Trial
-                </a>
-                <a
-                  href="#pricing"
-                  className="px-5 py-3 rounded-xl font-bold shadow"
-                  style={{ background: brand.navy, color: brand.gold }}
-                >
-                  See Pricing
+                  Start Free Trial — $29.99/mo
                 </a>
                 <a
                   href="/login"
                   className="px-5 py-3 rounded-xl font-bold shadow"
-                  style={{ background: "#ffffff", color: brand.navy, border: brand.border }}
-                >
-                  Login
-                </a>
-              </div>
-
-              {/* Netlify email capture */}
-              <form
-                id="signup"
-                name="early-access"
-                method="POST"
-                data-netlify="true"
-                action="/thanks"
-                className="mt-6 flex gap-2 max-w-xl"
-              >
-                <input type="hidden" name="form-name" value="early-access" />
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  defaultValue="fluegel.scott@proirp.com"
-                  placeholder="you@agency.com"
-                  className="flex-1 px-4 py-3 rounded-xl"
-                  style={{
-                    background: "rgba(0,0,0,0.03)",
-                    border: brand.border,
-                    color: brand.navy,
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="px-5 py-3 rounded-xl font-bold"
                   style={{ background: brand.navy, color: brand.gold }}
                 >
-                  Notify me
-                </button>
-              </form>
-              <p className="mt-2 text-sm" style={{ color: brand.slate }}>
-                No spam. Unsubscribe anytime. Questions?{" "}
-                <a
-                  href="mailto:fluegel.scott@proirp.com"
-                  className="underline"
-                  style={{ color: brand.navy }}
-                >
-                  fluegel.scott@proirp.com
+                  Log In
                 </a>
-              </p>
+              </div>
             </div>
           </div>
 
-          {/* Right-side welcome card mirroring your login style */}
+          {/* Screenshot card */}
           <div
-            className="bg-white rounded-3xl shadow-2xl p-8"
+            id="screens"
+            className="bg-white rounded-3xl shadow-2xl p-6"
             style={{ borderTop: `8px solid ${brand.gold}`, border: brand.border }}
           >
-            <div className="flex items-center gap-3 mb-4">
+            <div className="grid gap-4">
               <img
-                src="/logo.png"
-                alt="Pro IRP"
-                className="w-14 h-14 rounded-full shadow bg-white"
-                style={{ objectFit: "contain" }}
+                src="/img/login-shot.png"
+                alt="Pro IRP Login"
+                className="rounded-2xl border"
+                style={{ borderColor: "rgba(0,0,0,0.06)" }}
               />
-              <h3 className="text-2xl font-extrabold" style={{ color: brand.navy }}>
-                Predict • Prevent • Retain
-              </h3>
+              <img
+                src="/img/dashboard-shot.png"
+                alt="Pro IRP Dashboard"
+                className="rounded-2xl border"
+                style={{ borderColor: "rgba(0,0,0,0.06)" }}
+              />
             </div>
-            <ul className="space-y-3">
-              <li className="text-base" style={{ color: brand.slate }}>
-                <b>Predictive churn scoring</b> with explainable drivers
-              </li>
-              <li className="text-base" style={{ color: brand.slate }}>
-                <b>Real-time Rx & milestone alerts</b> so you act in time
-              </li>
-              <li className="text-base" style={{ color: brand.slate }}>
-                <b>Agent-first automation</b> for birthdays, reviews, plan changes
-              </li>
-            </ul>
+            <p className="mt-3 text-sm text-center" style={{ color: brand.slate }}>
+              Real product screenshots for clarity and trust.
+            </p>
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="py-8 sm:py-10">
-        <div className={`${container} grid md:grid-cols-3 gap-5`}>
+      {/* FEATURES — keep it tight: 3 focused cards */}
+      <section className="py-8 sm:py-10" id="features">
+        <Container className="grid md:grid-cols-3 gap-5">
           {[
             {
-              t: "Predictive analytics",
-              d: "Churn risk scores with clear drivers so teams know what to do next.",
-            },
-            {
-              t: "Real-time signals",
-              d: "Rx events and milestones trigger tasks, outreach, and workflows.",
+              t: "Predictive churn scoring",
+              d: "Spot at-risk members early with explainable drivers so reps know what to do next.",
             },
             {
               t: "Agent-first automation",
-              d: "One-click tasks, templates, and reminders that fit your day.",
+              d: "Birthday & review workflows, renewal reminders, and timely outreach in one task list.",
+            },
+            {
+              t: "Team visibility",
+              d: "Dashboards for agencies & FMOs; track protected renewals and retention trends.",
             },
           ].map((f, i) => (
             <div
@@ -214,184 +177,150 @@ export default function ProIRPLanding() {
               className="bg-white rounded-3xl shadow-2xl p-6"
               style={{ borderTop: `8px solid ${brand.gold}`, border: brand.border }}
             >
-              <h4 className="text-xl font-extrabold" style={{ color: brand.navy }}>
+              <h3 className="text-xl font-extrabold" style={{ color: brand.navy }}>
                 {f.t}
-              </h4>
+              </h3>
               <p className="mt-2" style={{ color: brand.slate }}>
                 {f.d}
               </p>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="how" className="py-4">
-        <div className={`${container} grid md:grid-cols-3 gap-5`}>
-          {[
-            { n: 1, t: "Connect", d: "Import clients or connect your CRM. Set retention goals." },
-            { n: 2, t: "Predict", d: "See risk scores and reasons. Prioritize the right members." },
-            { n: 3, t: "Retain", d: "Automate outreach and track renewals protected." },
-          ].map((s) => (
-            <div
-              key={s.n}
-              className="bg-white rounded-3xl shadow-2xl p-6"
-              style={{ borderTop: `8px solid ${brand.gold}`, border: brand.border }}
-            >
-              <h4 className="text-xl font-extrabold" style={{ color: brand.navy }}>
-                {s.n}. {s.t}
-              </h4>
-              <p className="mt-2" style={{ color: brand.slate }}>
-                {s.d}
-              </p>
-            </div>
-          ))}
-        </div>
+        </Container>
       </section>
 
       {/* PRICING */}
-      <section id="pricing" className="py-10">
-        <div className={`${container}`}>
+      <section className="py-12" id="pricing">
+        <Container>
           <h2 className="text-center text-3xl font-extrabold" style={{ color: brand.navy }}>
-            Pricing
+            Simple, transparent pricing
           </h2>
           <p className="text-center mt-2" style={{ color: brand.slate }}>
-            Simple, transparent plans that grow with you.
+            Start small, scale as your team grows.
           </p>
 
-          <div className="grid md:grid-cols-3 gap-5 mt-6">
-            {[
-              {
-                name: "Agent",
-                price: "$29.99/mo",
-                features: ["Predictive churn scoring", "Automation & templates", "Email reminders & tasks"],
-                cta: "Start Free Trial",
-              },
-              {
-                name: "Agency",
-                price: "$299/mo",
-                features: ["Team dashboards", "Workflows & approvals", "Role-based access"],
-                cta: "Start Free Trial",
-              },
-              {
-                name: "FMO & Enterprise",
-                price: "Custom",
-                features: ["White-label & SSO", "Advanced reporting", "Priority support"],
-                cta: "Talk to sales",
-                highlight: true,
-              },
-            ].map((p, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-3xl shadow-2xl p-6"
-                style={{
-                  borderTop: `8px solid ${brand.gold}`,
-                  border: brand.border,
-                  boxShadow: p.highlight ? "0 0 0 3px rgba(23,42,58,0.15)" : undefined,
-                }}
-              >
-                <h4 className="text-xl font-extrabold" style={{ color: brand.navy }}>
-                  {p.name}
-                </h4>
-                <div className="text-3xl font-extrabold mt-1" style={{ color: brand.navy }}>
-                  {p.price}
-                </div>
-                <ul className="mt-3 space-y-2">
-                  {p.features.map((f, idx) => (
-                    <li key={idx} style={{ color: brand.slate }}>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
+          <div className="grid md:grid-cols-3 gap-6 mt-8">
+            {/* Agent */}
+            <Card title="Agent" topBorder color={brand} cta={{
+              label: "Start Free Trial",
+              href: "/login",
+              variant: "gold",
+            }}>
+              <Price bold="$29.99" suffix="/mo" color={brand.navy} />
+              <Bullets items={[
+                "Predictive churn scoring",
+                "Automation & templates",
+                "Email reminders & tasks",
+              ]} color={brand.slate} />
+            </Card>
 
-                {p.cta === "Talk to sales" ? (
-                  <a
-                    href="mailto:fluegel.scott@proirp.com"
-                    className="mt-4 inline-block px-5 py-3 rounded-xl font-bold"
-                    style={{ background: brand.navy, color: brand.gold }}
-                  >
-                    {p.cta}
-                  </a>
-                ) : (
-                  <a
-                    href="#signup"
-                    className="mt-4 inline-block px-5 py-3 rounded-xl font-bold"
-                    style={{ background: brand.gold, color: brand.navy }}
-                  >
-                    {p.cta}
-                  </a>
-                )}
+            {/* Agency (with calculator) */}
+            <Card title="Agency (estimator)" topBorder color={brand} cta={{
+              label: "Talk to Sales",
+              href: "mailto:fluegel.scott@proirp.com?subject=Pro%20IRP%20Agency%20Pricing",
+              variant: "navy",
+            }}>
+              <div className="text-lg" style={{ color: brand.slate }}>
+                Starting at <b>$49.99</b> / agent / month*
               </div>
-            ))}
+
+              <label className="mt-3 text-sm" style={{ color: brand.slate }}>
+                Number of agents
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={agents}
+                onChange={(e) => setAgents(e.target.value)}
+                className="mt-1 px-4 py-2 rounded-xl border w-40"
+                style={{ borderColor: "rgba(0,0,0,0.12)", color: brand.navy }}
+              />
+
+              <div className="mt-3 text-2xl font-extrabold" style={{ color: brand.navy }}>
+                Est. ${agencyEstimate.toFixed(2)} / month
+              </div>
+              <p className="text-xs mt-1" style={{ color: brand.slate }}>
+                *Pricing varies by agency size & features. Volume discounts available.
+              </p>
+              <Bullets className="mt-3" items={[
+                "Team dashboards",
+                "Workflows & approvals",
+                "Role-based access",
+              ]} color={brand.slate} />
+            </Card>
+
+            {/* FMO & Enterprise */}
+            <Card title="FMO & Enterprise" topBorder color={brand} ring cta={{
+              label: "Contact Us",
+              href: "mailto:fluegel.scott@proirp.com?subject=Pro%20IRP%20FMO%20Enterprise",
+              variant: "navy",
+            }}>
+              <Price bold="Custom" color={brand.navy} />
+              <Bullets items={[
+                "White-label & SSO",
+                "Advanced reporting",
+                "Priority support",
+              ]} color={brand.slate} />
+            </Card>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-10">
-        <div className={`${container} max-w-3xl`}>
-          <h2 className="text-center text-3xl font-extrabold" style={{ color: brand.navy }}>
-            Frequently asked questions
-          </h2>
-          <div className="mt-6 grid gap-4">
-            <div className="bg-white rounded-3xl shadow-2xl p-6" style={{ border: brand.border }}>
-              <b style={{ color: brand.navy }}>Is there a free trial?</b>
-              <p className="mt-1" style={{ color: brand.slate }}>
-                Yes. You can try Pro IRP free—no credit card required—then pick a plan when you’re ready.
-              </p>
+      <section className="py-10" id="faq">
+        <Container className="max-w-3xl">
+          {[
+            ["Is there a free trial?", "Yes. Try Pro IRP free—no credit card required—then pick a plan when you’re ready."],
+            ["Can I use Pro IRP for my whole team?", "Yes. Agency and FMO plans include roles, dashboards, and team visibility."],
+            ["Does Pro IRP integrate with my tools?", "CSV import/export today; CRM & API integrations on the roadmap."],
+          ].map(([q, a], i) => (
+            <div
+              key={i}
+              className="bg-white rounded-3xl shadow-2xl p-6 mb-4"
+              style={{ border: brand.border }}
+            >
+              <b style={{ color: brand.navy }}>{q}</b>
+              <p className="mt-1" style={{ color: brand.slate }}>{a}</p>
             </div>
-            <div className="bg-white rounded-3xl shadow-2xl p-6" style={{ border: brand.border }}>
-              <b style={{ color: brand.navy }}>Can I use Pro IRP for my whole team?</b>
-              <p className="mt-1" style={{ color: brand.slate }}>
-                Yes. Agency and FMO plans include team features, roles, and dashboards.
-              </p>
-            </div>
-            <div className="bg-white rounded-3xl shadow-2xl p-6" style={{ border: brand.border }}>
-              <b style={{ color: brand.navy }}>Does Pro IRP integrate with my tools?</b>
-              <p className="mt-1" style={{ color: brand.slate }}>
-                CSV import/export today. APIs & CRM integrations are on the roadmap.
-              </p>
-            </div>
-          </div>
-        </div>
+          ))}
+        </Container>
       </section>
 
       {/* FINAL CTA */}
       <section className="py-10">
-        <div className={`${container}`}>
+        <Container>
           <div
             className="bg-white rounded-3xl shadow-2xl p-8 text-center"
             style={{ borderTop: `8px solid ${brand.gold}`, border: brand.border }}
           >
             <h3 className="text-2xl font-extrabold" style={{ color: brand.navy }}>
-              Ready to reduce churn and protect renewals?
+              Ready to protect more renewals?
             </h3>
             <p className="mt-2" style={{ color: brand.slate }}>
-              Join the early access list and be first to try Pro IRP.
+              Join the early adopters improving retention with Pro IRP.
             </p>
             <div className="mt-4 flex gap-3 justify-center flex-wrap">
               <a
-                href="#signup"
+                href="/login"
                 className="px-5 py-3 rounded-xl font-bold shadow"
                 style={{ background: brand.gold, color: brand.navy }}
               >
-                Get started
+                Get Started
               </a>
               <a
-                href="/login"
+                href="mailto:fluegel.scott@proirp.com"
                 className="px-5 py-3 rounded-xl font-bold shadow"
                 style={{ background: brand.navy, color: brand.gold }}
               >
-                Login
+                Book a Demo
               </a>
             </div>
           </div>
-        </div>
+        </Container>
       </section>
 
       {/* FOOTER */}
       <footer className="py-8">
-        <div className={`${container} grid md:grid-cols-3 items-center gap-3`}>
+        <Container className="grid md:grid-cols-3 items-center gap-3">
           <div className="text-sm" style={{ color: brand.slate }}>
             © {new Date().getFullYear()} Pro IRP. All rights reserved.
           </div>
@@ -407,8 +336,59 @@ export default function ProIRPLanding() {
           <div className="text-sm md:text-right" style={{ color: brand.slate }}>
             Hebron, Kentucky • Remote first
           </div>
-        </div>
+        </Container>
       </footer>
     </div>
+  );
+}
+
+/* ---------- Small presentational helpers ---------- */
+
+function Card({ title, children, topBorder, ring, color, cta, className = "" }) {
+  return (
+    <div
+      className={`bg-white rounded-3xl shadow-2xl p-6 flex flex-col ${className}`}
+      style={{
+        borderTop: topBorder ? `8px solid ${color.gold}` : undefined,
+        border: color.border,
+        boxShadow: ring ? "0 0 0 3px rgba(23,42,58,0.15)" : undefined,
+      }}
+    >
+      <h3 className="text-xl font-extrabold" style={{ color: color.navy }}>
+        {title}
+      </h3>
+      <div className="mt-2">{children}</div>
+
+      {cta && (
+        <a
+          href={cta.href}
+          className="mt-5 inline-block px-5 py-3 rounded-xl font-bold text-center"
+          style={{
+            background: cta.variant === "navy" ? color.navy : color.gold,
+            color: cta.variant === "navy" ? color.gold : color.navy,
+          }}
+        >
+          {cta.label}
+        </a>
+      )}
+    </div>
+  );
+}
+
+function Price({ bold, suffix = "", color }) {
+  return (
+    <div className="text-3xl font-extrabold mt-1" style={{ color }}>
+      {bold} <span className="text-base font-semibold">{suffix}</span>
+    </div>
+  );
+}
+
+function Bullets({ items, color, className = "" }) {
+  return (
+    <ul className={`mt-3 space-y-2 ${className}`} style={{ color }}>
+      {items.map((x, i) => (
+        <li key={i}>{x}</li>
+      ))}
+    </ul>
   );
 }
