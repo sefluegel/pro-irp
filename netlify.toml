@@ -1,4 +1,13 @@
 [build]
-  base = "frontend"
-  command = "npm install && npm run build"
-  publish = "build"
+command = "npm ci && npm run build"
+publish = "build"
+
+[build.environment]
+NODE_VERSION = "18.20.3"
+NPM_FLAGS = "--legacy-peer-deps"
+
+# SPA: send all routes to index.html to avoid 404s on refresh
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
