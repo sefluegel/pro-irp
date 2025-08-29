@@ -1,31 +1,76 @@
-﻿require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
+﻿// backend/index.js
+const express = require('express');
+const cors = require('cors');
+const Sentry = require('@sentry/node');
+const { nodeProfilingIntegration } = require('@sentry/profiling-node');
+const pkg = require('./package.json');
 
 const app = express();
 
-const PORT = process.env.PORT || 5000;
-const ORIGINS = [
-  process.env.CORS_ORIGIN || "http://localhost:3000",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "https://www.proirp.com",
-];
+/** ---------------- SENTRY (optional, safe if DSN missing) ---------------- */
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [nodeProfilingIntegration()],
+    tracesSampleRate: 1.0,
+    profilesSampleRate: 1.0,
+    environment: 'production',
+  });
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
+}
 
-app.use(helmet());
-app.use(express.json());
-app.use(cors({ origin: ORIGINS, credentials: true }));
+/** ---------------- CORS ---------------- */
+const allowed = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    ok: true,
-    service: "pro-irp-backend",
-    env: process.env.NODE_ENV || "dev",
-    time: new Date().toISOString(),
+app.use(cors({
+  origin(origin, cb) {
+    // allow same-origin / curl / server-side (no origin) OR exact matches in allowlist
+    if (!origin || allowed.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked: ${origin}`));
+  },
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  credentials: true,
+}));
+
+// clean OPTIONS handling
+app.options('*', cors());
+
+/** ---------------- BASIC ENDPOINTS ---------------- */
+app.get('/health', (_req, res) => {
+  res.status(200).json({ ok: true });
+});
+
+app.get('/version', (_req, res) => {
+  const sha = process.env.GIT_SHA || 'dev';
+  const time = process.env.BUILD_TIME || new Date().toISOString();
+  res.json({
+    name: pkg.name || 'pro-irp-api',
+    version: pkg.version || '0.0.0',
+    sha,
+    time,
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
+// manual Sentry test endpoint (safe if DSN missing)
+app.get('/sentry-test', (_req, res) => {
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureMessage('Day3 API test event');
+  }
+  res.json({ sent: true });
+});
+
+/** ---------------- ERROR HANDLER (Sentry last) ---------------- */
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.errorHandler());
+}
+
+/** ---------------- START SERVER ---------------- */
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+  console.log(`API listening on :${port}`);
 });
