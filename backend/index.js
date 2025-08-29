@@ -1,28 +1,22 @@
 ﻿const express = require("express");
 const cors = require("cors");
-const Sentry = require("@sentry/node"); // safe core SDK only
+const Sentry = require("@sentry/node");
 const pkg = require("./package.json");
 
 const app = express();
 
-// ---- SENTRY (wrapped so it can never crash the app) ----
+// ---- SENTRY (safe, cannot crash app) ----
 let sentryReady = false;
 try {
   if (process.env.SENTRY_DSN) {
-    Sentry.init({
-      dsn: process.env.SENTRY_DSN,
-      tracesSampleRate: 1.0,
-      environment: "production",
-    });
-    app.use(Sentry.Handlers.requestHandler());
-    app.use(Sentry.Handlers.tracingHandler());
+    Sentry.init({ dsn: process.env.SENTRY_DSN, environment: "production" });
     sentryReady = true;
     console.log("Sentry initialized.");
   } else {
     console.log("Sentry DSN not set; skipping.");
   }
 } catch (e) {
-  console.error("Sentry init failed:", e && e.message ? e.message : e);
+  console.error("Sentry init failed:", e?.message || e);
 }
 
 // ---- CORS (open for Day 3) ----
@@ -37,7 +31,7 @@ app.get("/version", (_req, res) => {
   res.json({ name: pkg.name || "pro-irp-api", version: pkg.version || "1.0.0", sha, time });
 });
 
-// Send one test event
+// send ONE test event without touching middleware
 app.get("/sentry-test", (_req, res) => {
   if (sentryReady) {
     Sentry.captureMessage("Day3 API test event");
@@ -45,9 +39,6 @@ app.get("/sentry-test", (_req, res) => {
   }
   return res.json({ sent: false, reason: "sentry-not-initialized" });
 });
-
-// Sentry error handler only if ready
-if (sentryReady) app.use(Sentry.Handlers.errorHandler());
 
 // ---- START ----
 const port = process.env.PORT || 8080;
