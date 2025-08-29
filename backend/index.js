@@ -1,4 +1,4 @@
-// backend/index.js
+﻿// backend/index.js
 const express = require('express');
 const cors = require('cors');
 const Sentry = require('@sentry/node');
@@ -27,10 +27,7 @@ const allowed = (process.env.CORS_ORIGINS || '')
   .filter(Boolean);
 
 app.use(cors({
-  origin(origin, cb) {
-    // allow same-origin / curl / server-side (no origin) OR exact matches in allowlist
-    if (!origin || allowed.includes(origin)) return cb(null, true);
-    return cb(new Error(`CORS blocked: ${origin}`));
+  origin: (_origin, cb) => cb(null, true)`));
   },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
@@ -74,3 +71,4 @@ const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log(`API listening on :${port}`);
 });
+
