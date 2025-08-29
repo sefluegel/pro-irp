@@ -1,4 +1,4 @@
-﻿// backend/index.js
+// backend/index.js
 const express = require('express');
 const cors = require('cors');
 const Sentry = require('@sentry/node');
@@ -38,7 +38,7 @@ app.use(cors({
 }));
 
 // clean OPTIONS handling
-app.options('*', cors());
+
 
 /** ---------------- BASIC ENDPOINTS ---------------- */
 app.get('/health', (_req, res) => {
