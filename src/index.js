@@ -1,4 +1,19 @@
-﻿;/*__apiBadgeContainer bootstrap  ensures global exists immediately*/
+﻿;/* ApiStatusDot stub  prevents ReferenceError if the component isn't defined */
+(function(){
+  try{
+    if (typeof globalThis.ApiStatusDot === 'undefined') {
+      var ApiStatusDot = function ApiStatusDot(){ return null; };   // no-op React component
+      if (typeof window !== 'undefined') window.ApiStatusDot = ApiStatusDot;
+      else globalThis.ApiStatusDot = ApiStatusDot;
+    } else {
+      var ApiStatusDot = globalThis.ApiStatusDot;                   // expose as local if present
+    }
+  }catch(e){
+    var ApiStatusDot = function ApiStatusDot(){ return null; };
+    if (typeof window !== 'undefined') window.ApiStatusDot = ApiStatusDot;
+  }
+})();
+;/*__apiBadgeContainer bootstrap  ensures global exists immediately*/
 (function(){
   try{
     if (typeof window !== 'undefined' && !window.__apiBadgeContainer) {
@@ -52,6 +67,7 @@ if (__reactDom && __reactDom.createRoot) {
   const ReactDOM = require('react-dom');
   ReactDOM.render(React.createElement(ApiStatusDot, {}), __apiBadgeContainer);
 }
+
 
 
 
