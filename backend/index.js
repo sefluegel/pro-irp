@@ -29,10 +29,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-/** ---- SIMULATOR ----
- * Toggle API health behavior globally via:
+/** ---- OUTAGE SIMULATOR ----
+ * Toggle API health via:
  *   GET /__simulate?state=up|degraded|down&key=YOUR_KEY
- * Set SIM_KEY in Railway (use any string). If missing, defaults to "dev".
+ * Set SIM_KEY in Railway (any string). If missing, defaults to "dev".
  */
 const SIM_KEY = (process.env.SIM_KEY || "dev").trim();
 let STATE = "up"; // up | degraded | down
@@ -40,7 +40,7 @@ let STATE = "up"; // up | degraded | down
 app.get("/__simulate", (req, res) => {
   const { state = "", key = "" } = req.query;
   if (key !== SIM_KEY) return res.status(401).json({ ok: false, error: "unauthorized" });
-  if (!["up", "degraded", "down"].includes(state)) return res.status(400).json({ ok: false, error: "bad-state" });
+  if (!["up","degraded","down"].includes(state)) return res.status(400).json({ ok:false, error:"bad-state" });
   STATE = state;
   return res.json({ ok: true, state: STATE });
 });
