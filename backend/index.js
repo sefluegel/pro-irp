@@ -5,23 +5,23 @@ const pkg = require("./package.json");
 
 const app = express();
 
-/** -------- SENTRY (safe) -------- */
+/** ---- SENTRY (safe) ---- */
 let sentryReady = false;
 const dsn = (process.env.SENTRY_DSN || "").trim();
 try {
   if (dsn) { Sentry.init({ dsn, environment: "production" }); sentryReady = true; }
 } catch (e) { console.error("Sentry init failed:", e?.message || e); }
 
-/** -------- CORS (allowlist from env) --------
- * CORS_ORIGINS env example:
- *   https://proirp.com,https://www.proirp.com,https://proirp.netlify.app,http://localhost:3000
+/** ---- CORS (allowlist via env) ----
+ * Set CORS_ORIGINS in Railway like:
+ * https://proirp.com,https://www.proirp.com,https://proirp.netlify.app,http://localhost:3000
  */
 const allowlist = (process.env.CORS_ORIGINS || "")
   .split(",").map(s => s.trim()).filter(Boolean);
 
 const corsOptions = {
   origin(origin, cb) {
-    if (!origin) return cb(null, true);               // allow curl/postman
+    if (!origin) return cb(null, true);            // allow curl/postman/direct hits
     const ok = allowlist.includes(origin);
     cb(ok ? null : new Error("Not allowed by CORS"), ok);
   },
@@ -29,7 +29,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-/** -------- Endpoints -------- */
+/** ---- Endpoints ---- */
 app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
 app.get("/version", (_req, res) => {
   const sha = process.env.GIT_SHA || "dev";
@@ -40,7 +40,6 @@ app.get("/sentry-test", (_req, res) => {
   if (sentryReady) { Sentry.captureMessage("Day3 API test event"); return res.json({ sent: true }); }
   return res.json({ sent: false, reason: "sentry-not-initialized" });
 });
-// (kept) debug helper
 app.get("/debug/sentry", (_req, res) => res.json({ hasEnv: Boolean(dsn), ready: sentryReady }));
 
 const port = process.env.PORT || 8080;
