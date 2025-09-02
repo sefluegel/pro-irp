@@ -1,4 +1,21 @@
-﻿;/*__apiBadgeContainer_FIX*/
+﻿;/*__apiBadgeContainer bootstrap  ensures global exists immediately*/
+(function(){
+  try{
+    if (typeof window !== 'undefined' && !window.__apiBadgeContainer) {
+      var el = document.createElement('div');
+      el.id = '__apiBadgeContainer';
+      window.__apiBadgeContainer = el;              // define it right away
+      if (document.body) {
+        document.body.appendChild(el);              // attach now if possible
+      } else {
+        document.addEventListener('DOMContentLoaded', function(){
+          if (!el.isConnected) document.body.appendChild(el);
+        });
+      }
+    }
+  }catch(e){}
+})();
+;/*__apiBadgeContainer_FIX*/
 (function(){try{
   if (typeof window !== 'undefined' && !window.__apiBadgeContainer){
     var el = document.createElement('div');
@@ -35,5 +52,6 @@ if (__reactDom && __reactDom.createRoot) {
   const ReactDOM = require('react-dom');
   ReactDOM.render(React.createElement(ApiStatusDot, {}), __apiBadgeContainer);
 }
+
 
 
