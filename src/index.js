@@ -1,4 +1,18 @@
-﻿import React from 'react';
+﻿;/*__apiBadgeContainer_FIX*/
+(function(){try{
+  if (typeof window !== 'undefined' && !window.__apiBadgeContainer){
+    var el = document.createElement('div');
+    el.id='__apiBadgeContainer';
+    el.style.cssText='position:fixed;top:8px;right:8px;z-index:10000';
+    document.addEventListener('DOMContentLoaded', function(){
+      if (!document.getElementById('__apiBadgeContainer')){
+        document.body.appendChild(el);
+      }
+      window.__apiBadgeContainer = document.getElementById('__apiBadgeContainer') || el;
+    });
+  }
+}catch(e){}})();
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
@@ -21,4 +35,5 @@ if (__reactDom && __reactDom.createRoot) {
   const ReactDOM = require('react-dom');
   ReactDOM.render(React.createElement(ApiStatusDot, {}), __apiBadgeContainer);
 }
+
 
