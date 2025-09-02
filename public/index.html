@@ -1,43 +1,22 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Pro IRP App" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Pro IRP</title>
-    <!-- Modern Google Font for SaaS UI -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- You can add more meta tags for SEO/branding below if you wish -->
-    <meta name="theme-color" content="#1d4ed8" />
-    <meta name="description" content="Pro IRP â€“ Next Generation Insurance Retention Platform" />
-  <!-- Route gate: home shows landing, /app shows dashboard -->
-<script>
-(function() {
-  try {
-    var p = (location.pathname || "/");
-    var onApp = (p === "/app") || p.indexOf("/app/") === 0;
-    // If we're on /app*, hide everything except the React root (#root).
-    // If we're on home (/), hide only the React root so landing shows.
-    var css = onApp
-      ? "body > *:not(#root):not(script){display:none !important;}"
-      : "#root{display:none !important;}";
-    var s = document.createElement("style");
-    s.id = "route-gate-style";
-    s.textContent = css;
-    document.head.appendChild(s);
-  } catch(e) {}
-})();
-</script>
-</head>
+  </head>
   <body>
-  <div id="root"></div>
-  <script src="/api-status.js" defer></script>
-  <script src="/sentry-fe.js" defer></script>
-</body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+
+    <!-- small status badge -->
+    <script defer src="/api-status.js"></script>
+    <!-- (optional) frontend sentry if you added it earlier -->
+    <!-- <script defer src="/sentry-fe.js"></script> -->
+  </body>
 </html>
-
-
-
-
-
-
