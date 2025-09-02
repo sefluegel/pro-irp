@@ -10,13 +10,32 @@
     <!-- You can add more meta tags for SEO/branding below if you wish -->
     <meta name="theme-color" content="#1d4ed8" />
     <meta name="description" content="Pro IRP â€“ Next Generation Insurance Retention Platform" />
-  </head>
+  <!-- Route gate: home shows landing, /app shows dashboard -->
+<script>
+(function() {
+  try {
+    var p = (location.pathname || "/");
+    var onApp = (p === "/app") || p.indexOf("/app/") === 0;
+    // If we're on /app*, hide everything except the React root (#root).
+    // If we're on home (/), hide only the React root so landing shows.
+    var css = onApp
+      ? "body > *:not(#root):not(script){display:none !important;}"
+      : "#root{display:none !important;}";
+    var s = document.createElement("style");
+    s.id = "route-gate-style";
+    s.textContent = css;
+    document.head.appendChild(s);
+  } catch(e) {}
+})();
+</script>
+</head>
   <body>
   <div id="root"></div>
   <script src="/api-status.js" defer></script>
   <script src="/sentry-fe.js" defer></script>
 </body>
 </html>
+
 
 
 
