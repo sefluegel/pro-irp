@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -9,10 +9,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- You can add more meta tags for SEO/branding below if you wish -->
     <meta name="theme-color" content="#1d4ed8" />
-    <meta name="description" content="Pro IRP – Next Generation Insurance Retention Platform" />
+    <meta name="description" content="Pro IRP â€“ Next Generation Insurance Retention Platform" />
   </head>
   <body style="font-family: 'Inter', sans-serif;">
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-  </body>
+    <!-- API status base (CRA will replace the %REACT_APP_*% token at build time) -->
+  <script>window.API_BASE="%REACT_APP_API_BASE_URL%";</script>
+  <link rel="stylesheet" href="/api-status.css">
+  <div id="api-dot" class="api-dot" data-state=""></div>
+  <script src="/api-status.js"></script>
+</body>
 </html>
+

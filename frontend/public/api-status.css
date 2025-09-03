@@ -1,0 +1,10 @@
+﻿.api-dot {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 10px; height: 10px; border-radius: 9999px;
+  background: #999; box-shadow: 0 0 0 2px rgba(0,0,0,.08); z-index: 9999;
+}
+.api-dot[data-state="ok"] { background: #22c55e; }     /* green */
+.api-dot[data-state="warn"] { background: #f59e0b; }   /* amber */
+.api-dot[data-state="down"] { background: #ef4444; }   /* red */
