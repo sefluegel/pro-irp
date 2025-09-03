@@ -1,5 +1,1 @@
-﻿@import "tailwindcss";
-
-:root { --brand-navy:#172A3A; --brand-slate:#20344A; --brand-gold:#FFB800; }
-html,body,#root { height:100%; }
-body { background:#f5f7fb; color:var(--brand-navy); }
+@import "tailwindcss";

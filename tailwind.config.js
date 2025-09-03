@@ -1,11 +1,4 @@
-﻿/** @type {import('tailwindcss').Config} */
+/** Tailwind v4 content globs */
 module.exports = {
-  content: ["./public/index.html", "./src/**/*.{js,jsx,ts,tsx}"],
-  theme: {
-    extend: {
-      fontFamily: { inter: ["Inter", "system-ui", "sans-serif"] },
-      colors: { brand: { navy: "#172A3A", slate: "#20344A", gold: "#FFB800" } }
-    },
-  },
-  plugins: [],
+  content: ["./public/**/*.html", "./src/**/*.{js,jsx,ts,tsx}"],
 };
