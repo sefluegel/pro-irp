@@ -3,9 +3,8 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 
-const container = document.getElementById("root");
-const root = createRoot(container);
-root.render(
+const el = document.getElementById("root");
+createRoot(el).render(
   <BrowserRouter>
     <App />
   </BrowserRouter>
