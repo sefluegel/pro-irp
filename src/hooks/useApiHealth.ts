@@ -5,13 +5,13 @@ type Status = "green" | "amber" | "red";
 /** Poll /health on a schedule and return green/amber/red */
 export function useApiHealth(pollMs = 15000, timeoutMs = 4000): Status {
   const [status, setStatus] = useState<Status>("red");
-  const base = (process.env.REACT_APP_API_BASE_URL || "").replace(/\/$/, "");
+  const base = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
   useEffect(() => {
     let mounted = true;
 
     async function check() {
-      if (!base) { mounted && setStatus("red"); return; }
+      if (!base) { if (mounted) setStatus("red"); return; }
       try {
         const ctl = new AbortController();
         const timer = setTimeout(() => ctl.abort(), timeoutMs);
@@ -19,13 +19,12 @@ export function useApiHealth(pollMs = 15000, timeoutMs = 4000): Status {
         const res = await fetch(`${base}/health`, { signal: ctl.signal });
         clearTimeout(timer);
 
-        const elapsed = Date.now() - t0;
         if (!mounted) return;
 
-        if (res.ok && elapsed < timeoutMs) setStatus("green");
-        else setStatus("amber"); // slow or non-200 = degraded
+        const elapsed = Date.now() - t0;
+        setStatus(res.ok && elapsed < timeoutMs ? "green" : "amber");
       } catch {
-        mounted && setStatus("red");  // network/unreachable
+        if (mounted) setStatus("red"); // network/unreachable
       }
     }
 
@@ -36,3 +35,4 @@ export function useApiHealth(pollMs = 15000, timeoutMs = 4000): Status {
 
   return status;
 }
+
