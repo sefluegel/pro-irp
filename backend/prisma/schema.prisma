@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")  // from Railway/Neon
+}
+
+enum Role { ADMIN AGENT VIEWER }
+enum TaskStatus { OPEN IN_PROGRESS DONE }
+enum Channel { sms email call note }
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // 'fmo' | 'agency' | 'solo'
+  settings  Json?
+  users     User[]
+  agents    Agent[]
+  clients   Client[]
+  tasks     Task[]
+  comms     Comm[]
+  files     File[]
+  audits    AuditEvent[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email     String   @unique
+  password  String   // bcrypt hash
+  name      String
+  role      Role     @default(AGENT)
+  createdAt DateTime @default(now())
+}
+
+model Agent {
+  id        String  @id @default(cuid())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  calendarConnected Boolean @default(false)
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  email        String?
+  phone        String?
+  status       String?     // active, churn-risk, etc.
+  dob          DateTime?
+  dsnp         Boolean @default(false)
+  lastSwitches Int     @default(0)
+  newMeds      Int     @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+  policies     Policy[]
+  tasks        Task[]
+  comms        Comm[]
+  files        File[]
+}
+
+model Policy {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  carrier   String
+  plan      String
+  startDate DateTime
+  endDate   DateTime?
+  status    String
+}
+
+model Task {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId  String?
+  client    Client?    @relation(fields: [clientId], references: [id])
+  title     String
+  dueAt     DateTime?
+  status    TaskStatus @default(OPEN)
+  priority  Int        @default(0)
+  createdAt DateTime   @default(now())
+}
+
+model Comm {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  channel   Channel
+  content   String
+  direction String    // out | in
+  providerId String?
+  status    String?   // queued, sent, delivered, failed
+  at        DateTime  @default(now())
+}
+
+model File {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  key       String   // s3 key
+  name      String
+  size      Int
+  type      String
+  createdAt DateTime @default(now())
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String?
+  type      String
+  meta      Json?
+  at        DateTime @default(now())
+}
