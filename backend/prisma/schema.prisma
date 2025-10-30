@@ -1,20 +1,22 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")  // from Railway/Neon
+  url      = env("DATABASE_URL")
 }
 
 enum Role { ADMIN AGENT VIEWER }
 enum TaskStatus { OPEN IN_PROGRESS DONE }
-enum Channel { sms email call note }
+enum Channel { SMS EMAIL CALL NOTE }
 
 model Tenant {
   id        String   @id @default(cuid())
   name      String
-  type      String   // 'fmo' | 'agency' | 'solo'
+  type      String          // 'fmo' | 'agency' | 'solo'
   settings  Json?
   users     User[]
   agents    Agent[]
@@ -38,11 +40,11 @@ model User {
 }
 
 model Agent {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId    String  @unique
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   phone     String?
   calendarConnected Boolean @default(false)
 }
@@ -56,11 +58,11 @@ model Client {
   phone        String?
   status       String?     // active, churn-risk, etc.
   dob          DateTime?
-  dsnp         Boolean @default(false)
-  lastSwitches Int     @default(0)
-  newMeds      Int     @default(0)
+  dsnp         Boolean  @default(false)
+  lastSwitches Int      @default(0)
+  newMeds      Int      @default(0)
   notes        String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   policies     Policy[]
   tasks        Task[]
   comms        Comm[]
@@ -92,17 +94,17 @@ model Task {
 }
 
 model Comm {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  clientId  String
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  channel   Channel
-  content   String
-  direction String    // out | in
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  channel    Channel
+  content    String
+  direction  String    // out | in
   providerId String?
-  status    String?   // queued, sent, delivered, failed
-  at        DateTime  @default(now())
+  status     String?   // queued, sent, delivered, failed
+  at         DateTime  @default(now())
 }
 
 model File {
@@ -119,11 +121,12 @@ model File {
 }
 
 model AuditEvent {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId    String?
-  type      String
-  meta      Json?
-  at        DateTime @default(now())
+  id       String   @id @default(cuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String?
+  type     String
+  meta     Json?
+  at       DateTime @default(now())
 }
+
