@@ -14,6 +14,12 @@ function enforceHttps(req, res, next) {
     return next();
   }
 
+  // Skip HTTPS enforcement on Elastic Beanstalk until SSL is configured
+  // ELB health checks and direct instance access won't have x-forwarded-proto
+  if (process.env.SKIP_HTTPS_REDIRECT === 'true') {
+    return next();
+  }
+
   // Check if request is HTTPS (also check x-forwarded-proto for proxies/load balancers)
   const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
 
