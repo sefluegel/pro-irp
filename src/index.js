@@ -6,6 +6,9 @@ import App from "./App";
 // load Tailwind + brand styles (lives in src/index.css)
 import "./index.css";
 
+// Initialize i18n for translations
+import "./i18n";
+
 const el = document.getElementById("root");
 createRoot(el).render(
   <React.StrictMode>

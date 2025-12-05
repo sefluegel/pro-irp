@@ -1,99 +1,103 @@
+// src/pages/Login.jsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { setToken } from "../auth/Auth";
+import { login } from "../api";
 
-const Login = () => {
+export default function Login() {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [msg, setMsg] = useState("");
-  const navigate = useNavigate();
+  const [pwd, setPwd] = useState("");
+  const [err, setErr] = useState("");
+  const [logoError, setLogoError] = useState(false);
 
-  // Demo: Allow login even if fields are blank
-  const handleSubmit = async e => {
+  async function onSubmit(e) {
     e.preventDefault();
-    setMsg("Logging in...");
-    setTimeout(() => {
-      setMsg("");
-      navigate("/dashboard");
-    }, 600);
-  };
+    setErr("");
+    try {
+      const data = await login(email, pwd);
+      setToken(data.token);
+      const from = location.state?.from?.pathname || "/dashboard";
+      nav(from, { replace: true });
+    } catch (e) {
+      setErr(typeof e?.message === "string" ? e.message : t('login') + " failed");
+    }
+  }
 
   return (
-    <div
-      className="flex flex-col items-center justify-center min-h-screen"
-      style={{
-        background: "linear-gradient(120deg, #1a3150 0%, #20344A 40%, #007cf0 100%)",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      <div
-        className="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full border-t-8"
-        style={{
-          borderTopColor: "#FFB800",
-          borderTopWidth: "8px",
-        }}
-      >
-        {/* Modern Branding Header */}
-        <div className="flex flex-col items-center pt-2 pb-6">
-          <img
-            src="/logo.png"
-            alt="Pro IRP Logo"
-            className="w-28 h-28 mb-4 rounded-full shadow bg-white"
-            style={{ objectFit: "contain" }}
-          />
-          <h1
-            className="text-4xl font-extrabold tracking-tight font-[Inter]"
-            style={{ color: "#172A3A" }}
-          >
-            Pro <span style={{ color: "#FFB800" }}>IRP</span>
-          </h1>
-          <div
-            className="mt-1 text-lg"
-            style={{
-              color: "#20344A",
-              fontFamily: "Inter, sans-serif",
-              fontWeight: 500,
-            }}
-          >
-            Next Generation Insurance Retention
+    <div className="min-h-screen bg-gradient-to-br from-[#0F2A43] via-[#0E3F73] to-[#0A69B8] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden">
+          {/* Top accent */}
+          <div className="h-2 bg-amber-400" />
+
+          {/* Header w/ logo */}
+          <div className="px-8 pt-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-white shadow mx-auto -mt-10 ring-1 ring-black/5 flex items-center justify-center">
+              {/* Uses your public/logo.png */}
+              {!logoError ? (
+                <img
+                  src="/logo.png"
+                  alt="Pro IRP"
+                  className="w-12 h-12 object-contain"
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <span className="text-xs font-semibold tracking-wider">PRO IRP</span>
+              )}
+            </div>
+
+            <h1 className="mt-5 text-2xl font-bold text-slate-800">
+              Pro <span className="text-amber-500">IRP</span>
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {t('nextGenInsurance')}
+            </p>
           </div>
-        </div>
-        <form onSubmit={handleSubmit}>
-          {msg && <div className="text-center text-red-500 mb-3">{msg}</div>}
-          <input
-            className="w-full p-3 rounded border mb-4 focus:outline-[#172A3A] font-[Inter]"
-            type="email"
-            placeholder="Email"
-            value={email}
-            autoComplete="username"
-            onChange={e => setEmail(e.target.value)}
-          />
-          <input
-            className="w-full p-3 rounded border mb-4 focus:outline-[#172A3A] font-[Inter]"
-            type="password"
-            placeholder="Password"
-            value={pw}
-            autoComplete="current-password"
-            onChange={e => setPw(e.target.value)}
-          />
-          <button
-            className="w-full py-3 rounded font-semibold text-lg shadow mt-2 transition"
-            style={{
-              background: "#172A3A",
-              color: "#FFB800"
-            }}
-            type="submit"
-          >
-            Log In
-          </button>
-        </form>
-        <div className="flex justify-between mt-5 text-sm" style={{ color: "#172A3A" }}>
-          <Link to="/signup" className="hover:underline font-semibold">
-            Sign up
-          </Link>
+
+          {/* Form */}
+          <form onSubmit={onSubmit} className="px-8 pt-6 pb-8">
+            {err ? (
+              <div className="mb-3 text-red-600 text-sm">{err}</div>
+            ) : null}
+
+            <label className="block text-sm text-slate-700 mb-1">{t('emailLabel')}</label>
+            <input
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 mb-3"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+
+            <label className="block text-sm text-slate-700 mb-1">{t('passwordLabel')}</label>
+            <input
+              type="password"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 mb-5"
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              autoComplete="current-password"
+            />
+
+            <button className="w-full bg-slate-900 text-white rounded-lg py-2.5 font-medium hover:opacity-95 active:opacity-90">
+              {t('logIn')}
+            </button>
+          </form>
+
+          {/* Footer links */}
+          <div className="px-8 pb-6 text-center text-sm flex items-center justify-center gap-6">
+            <Link to="/forgot" className="text-slate-500 hover:text-slate-700 underline">
+              {t('forgotPassword')}
+            </Link>
+            <Link to="/signup" className="text-slate-500 hover:text-slate-700 underline">
+              {t('signUp')}
+            </Link>
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default Login;
+}

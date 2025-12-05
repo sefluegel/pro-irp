@@ -1,13 +1,17 @@
 // frontend/src/components/ProtectedRoute.jsx
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { getToken } from "../auth/Auth";
 
-const ProtectedRoute = ({ children }) => {
-  const isLoggedIn = /* replace with real auth check */ true;
-  if (isLoggedIn) {
-    return children;
+export default function ProtectedRoute({ children }) {
+  const token = getToken();
+  const location = useLocation();
+
+  // If there is no token, send user to the login page ("/")
+  if (!token) {
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
-  return <Navigate to="/login" replace />;
-};
 
-export default ProtectedRoute;
+  // If token exists, allow access to the protected page
+  return children;
+}

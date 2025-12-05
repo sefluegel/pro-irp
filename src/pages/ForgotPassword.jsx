@@ -1,35 +1,54 @@
-import React from "react";
-import Logo from "../components/Logo";
-import { Link } from "react-router-dom";
+// src/pages/ForgotPassword.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { requestPasswordReset } from "../api";
 
-const ForgotPassword = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 via-blue-300 to-white">
-    <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full">
-      <Logo size={60} />
-      <h1 className="text-2xl font-extrabold text-center mb-6 text-blue-700 tracking-wide">
-        Reset your password
-      </h1>
-      <form>
-        <input
-          className="w-full p-3 rounded border mb-4 focus:outline-blue-500"
-          type="email"
-          placeholder="Enter your email"
-          required
-        />
-        <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-semibold text-lg shadow mt-2 transition"
-          type="submit"
-        >
-          Send reset link
-        </button>
-      </form>
-      <div className="flex justify-between mt-5 text-sm text-blue-600">
-        <Link to="/login" className="hover:underline font-semibold">
-          Back to log in
-        </Link>
+export default function ForgotPassword() {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  const [email, setEmail] = useState("");
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setErr("");
+    setMsg("");
+    try {
+      await requestPasswordReset(email);
+      setMsg("If the email exists, a code was created. In DEV, check the backend console for the code.");
+      setTimeout(() => {
+        nav(`/reset?email=${encodeURIComponent(email)}`, { replace: true });
+      }, 800);
+    } catch (e) {
+      setErr("Unable to request reset.");
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0F2A43] via-[#0E3F73] to-[#0A69B8] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden">
+        <div className="h-2 bg-amber-400" />
+        <div className="px-8 pt-8 text-center">
+          <h1 className="text-2xl font-bold text-slate-800">{t('forgotPasswordTitle')}</h1>
+          <p className="text-sm text-slate-500 mt-1">{t('resetCodeMessage')}</p>
+        </div>
+        <form onSubmit={onSubmit} className="px-8 pt-6 pb-8">
+          {msg && <div className="mb-3 text-green-700 text-sm">{msg}</div>}
+          {err && <div className="mb-3 text-red-600 text-sm">{err}</div>}
+          <label className="block text-sm text-slate-700 mb-1">{t('emailLabel')}</label>
+          <input
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 mb-5"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <button className="w-full bg-slate-900 text-white rounded-lg py-2.5 font-medium hover:opacity-95 active:opacity-90">
+            {t('sendCode')}
+          </button>
+        </form>
       </div>
     </div>
-  </div>
-);
-
-export default ForgotPassword;
+  );
+}

@@ -1,5 +1,6 @@
 // /frontend/src/pages/OEPHub.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Shield, // just for vibe
   ThumbsUp, MessageSquare, Send, Users, TrendingDown, TrendingUp,
@@ -136,32 +137,93 @@ const DEFAULT_ACTIVITY = [
 
 const DEFAULT_TEMPLATES = [
   {
-    title: "Jan 1 — Congrats/Activation",
+    id: 1,
+    titleKey: "jan1Welcome",
+    title: "Jan 1 Welcome",
     type: "Email",
+    subject: "Your new coverage is active — congrats!",
     content:
-      "Subject: Your new coverage is active — congrats!\n\nHi {ClientName},\n\nToday your new coverage is in effect. Have you received your plan ID cards? If you have any questions, I’m here to help.\n\nBest,\n{AgentName}\n{AgentPhone}",
+      "Hi {ClientName},\n\nToday your new coverage is in effect. Have you received your plan ID cards? If you have any questions, I'm here to help.\n\nBest,\n{AgentName}\n{AgentPhone}",
     tags: ["Jan 1", "Welcome"],
     featured: true,
   },
   {
-    title: "Feb 1 — First Full Month",
+    id: 2,
+    titleKey: "benefitReminder",
+    title: "Feb 1 Check-in",
     type: "Email",
+    subject: "One month in — how is your plan going?",
     content:
-      "Subject: One month in — how is your plan going?\n\nHi {ClientName},\n\nYou’re in the first full month of your plan. Any issues with pharmacies, doctors, or billing I can help solve?\n\nBest,\n{AgentName}",
+      "Hi {ClientName},\n\nYou're in the first full month of your plan. Any issues with pharmacies, doctors, or billing I can help solve?\n\nBest,\n{AgentName}",
     tags: ["Feb 1", "Check-in"],
   },
   {
-    title: "Mar 1 — Follow-up & Referrals",
+    id: 3,
+    titleKey: "satisfactionCheck",
+    title: "Mar 1 Follow-up + Referral",
     type: "SMS",
     content:
-      "Hi {ClientName}, we’re two months in—any issues I can fix? If you’re happy, referrals are appreciated. —{AgentName}",
+      "Hi {ClientName}, we're two months in—any issues I can fix? If you're happy, referrals are appreciated. —{AgentName}",
     tags: ["Mar 1", "Referral", "SMS"],
   },
+  {
+    id: 4,
+    title: "ID Cards Reminder",
+    type: "Email",
+    subject: "Have your ID cards arrived?",
+    content:
+      "Hi {ClientName},\n\nJust checking in — have your new Medicare ID cards arrived? If not, I can help expedite them with your carrier.\n\nBest,\n{AgentName}\n{AgentPhone}",
+    tags: ["Jan", "ID Cards"],
+  },
+  {
+    id: 5,
+    title: "Pharmacy Check",
+    type: "Email",
+    subject: "Quick pharmacy check-in",
+    content:
+      "Hi {ClientName},\n\nHave you had a chance to pick up any prescriptions with your new plan? Let me know if there were any surprises with copays or formulary changes.\n\nBest,\n{AgentName}",
+    tags: ["Feb", "Pharmacy"],
+  },
+  {
+    id: 6,
+    title: "Referral Ask",
+    type: "SMS",
+    content:
+      "Hi {ClientName}, if you're happy with your coverage, I'd appreciate any referrals to friends or family who might need help during Medicare enrollment. —{AgentName}",
+    tags: ["Mar", "Referral", "SMS"],
+  },
+  {
+    id: 7,
+    title: "Save Attempt",
+    type: "Email",
+    subject: "Before you switch — can I help?",
+    content:
+      "Hi {ClientName},\n\nI noticed a change on your plan. Before anything finalizes, can I fix any issues—copays, pharmacies, doctors—so you're fully set?\n\nI want to make sure you have the best coverage for your needs.\n\nBest,\n{AgentName}\n{AgentPhone}",
+    tags: ["Retention", "Save"],
+    featured: true,
+  },
+  {
+    id: 8,
+    title: "Monthly Newsletter",
+    type: "Email",
+    subject: "{PolicyYear} Medicare Updates",
+    content:
+      "Hi {ClientName},\n\nHere's your monthly Medicare update:\n\n• Important dates to remember\n• Tips for getting the most from your plan\n• New benefits you might not know about\n\nQuestions? Reply to this email or call me anytime.\n\nBest,\n{AgentName}\n{AgentPhone}",
+    tags: ["Newsletter", "Monthly"],
+  },
+];
+
+const MERGE_TAGS = [
+  { labelKey: "clientName", label: "Client Name", tag: "{ClientName}", sample: "Jane Albright" },
+  { labelKey: "agentName", label: "Agent Name", tag: "{AgentName}", sample: "Scott Fluegel" },
+  { labelKey: "agentPhone", label: "Agent Phone", tag: "{AgentPhone}", sample: "(859) 555-1234" },
+  { labelKey: "policyYear", label: "Policy Year", tag: "{PolicyYear}", sample: "2025" },
 ];
 
 /* -------------------- component -------------------- */
 
 export default function OEPHub({ clients: propClients }) {
+  const { t } = useTranslation();
   const [now] = useState(new Date());
   const season = useMemo(() => getOEPSeason(now), [now]);
 
@@ -171,12 +233,14 @@ export default function OEPHub({ clients: propClients }) {
   const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
   const [searchTemplate, setSearchTemplate] = useState("");
   const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [editingTemplate, setEditingTemplate] = useState(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState([
-    { sender: "ai", text: "Hi! Need a Jan/Feb/Mar message or a polite churn save? Ask me." },
+    { sender: "ai", text: t('askAboutAutomations') },
   ]);
   const [aiInput, setAiInput] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
+  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
 
   const [automations, setAutomations] = useState({
     jan1: true,
@@ -223,7 +287,7 @@ export default function OEPHub({ clients: propClients }) {
           sender: "ai",
           text:
             q.toLowerCase().includes("save") || q.toLowerCase().includes("churn")
-              ? "Try this save: \n\nHi {ClientName}, I noticed a change on your plan. Before anything finalizes, can I fix any issues—copays, pharmacies, doctors—so you’re fully set?\n\n—{AgentName}"
+              ? "Try this save: \n\nHi {ClientName}, I noticed a change on your plan. Before anything finalizes, can I fix any issues—copays, pharmacies, doctors—so you're fully set?\n\n—{AgentName}"
               : "Jan/Feb/Mar cadence:\n• Jan 1: Congrats, cards arrived?\n• Feb 1: First month check-in\n• Mar 1: Final follow-up + referrals",
         },
       ]);
@@ -253,8 +317,44 @@ export default function OEPHub({ clients: propClients }) {
     const rendered = content
       .replaceAll("{ClientName}", "Jane Albright")
       .replaceAll("{AgentName}", "Scott Fluegel")
-      .replaceAll("{AgentPhone}", "(859) 555-1234");
+      .replaceAll("{AgentPhone}", "(859) 555-1234")
+      .replaceAll("{PolicyYear}", String(season.seasonYear));
     alert("Test send (demo):\n\n" + rendered);
+  }
+
+  function handleEditTemplate(tpl) {
+    setEditingTemplate({ ...tpl });
+  }
+
+  function handleSaveTemplate(e) {
+    e.preventDefault();
+    if (!editingTemplate) return;
+
+    if (editingTemplate.id) {
+      // Update existing
+      setTemplates((prev) => prev.map((t) => t.id === editingTemplate.id ? editingTemplate : t));
+    } else {
+      // Create new
+      const newTpl = { ...editingTemplate, id: Date.now() };
+      setTemplates((prev) => [newTpl, ...prev]);
+    }
+    setEditingTemplate(null);
+  }
+
+  function handleCreateTemplate() {
+    setEditingTemplate({
+      title: "",
+      type: "Email",
+      subject: "",
+      content: "",
+      tags: [],
+      featured: false,
+    });
+  }
+
+  function handleDeleteTemplate(id) {
+    if (!confirm("Delete this template?")) return;
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
   }
 
   /* -------- Automations toggles -------- */
@@ -343,32 +443,32 @@ export default function OEPHub({ clients: propClients }) {
       <div className="sticky top-0 z-20 flex items-center justify-between p-6 border-b bg-white/70 backdrop-blur">
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-indigo-800" />
-          <h1 className="text-3xl font-black tracking-tight text-indigo-900">OEP Retention Hub</h1>
+          <h1 className="text-3xl font-black tracking-tight text-indigo-900">{t('oepRetentionHub')}</h1>
         </div>
         <div className="flex items-center gap-3 text-sm">
           <CalendarDays className="w-5 h-5 text-indigo-700" />
           <span className="font-semibold text-indigo-900">
-            OEP Season: Jan 1 – Mar 31, {season.seasonYear} {inSeason ? "• Active" : "• Upcoming"}
+            {t('oepSeason')}: Jan 1 – Mar 31, {season.seasonYear} {inSeason ? `• ${t('oepSeasonActive')}` : `• ${t('oepSeasonUpcoming')}`}
           </span>
           <button
             className="ml-3 bg-white border border-indigo-200 text-indigo-900 px-3 py-1.5 rounded-xl font-semibold hover:bg-indigo-50"
             onClick={() => setHelpOpen(true)}
           >
             <HelpCircle className="inline-block -mt-0.5 mr-1" size={16} />
-            Help
+            {t('help')}
           </button>
         </div>
       </div>
 
       {/* HELP modal */}
       {helpOpen && (
-        <Modal title="Using OEP Retention Hub" onClose={() => setHelpOpen(false)}>
+        <Modal title={t('oepRetentionHub')} onClose={() => setHelpOpen(false)}>
           <ul className="space-y-2 text-gray-700">
-            <li>• The cohort auto-builds from first-time clients with effective dates in the OEP intake window.</li>
-            <li>• Automations send Jan 1, Feb 1, and Mar 1 messages (toggle below).</li>
-            <li>• Track cohort size, follow-ups sent, churn count, and retention %.</li>
-            <li>• Use <b>Send Follow-Up</b> on each client to queue messages (demo). Connect APIs later.</li>
-            <li>• AI helper can draft churn-saves or quick check-in notes.</li>
+            <li>• {t('stopChurnBeforeStarts')}</li>
+            <li>• {t('jan1Congrats')}</li>
+            <li>• {t('feb1FirstMonth')}</li>
+            <li>• {t('mar1FollowUpReferrals')}</li>
+            <li>• {t('monthlyNewslettersCohort')}</li>
           </ul>
         </Modal>
       )}
@@ -381,48 +481,48 @@ export default function OEPHub({ clients: propClients }) {
           <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 text-white rounded-3xl p-6 shadow-xl">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <div className="text-sm opacity-90">Retention Mode</div>
-                <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight">Keep Every Win</h2>
+                <div className="text-sm opacity-90">{t('retentionMode')}</div>
+                <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight">{t('keepEveryWin')}</h2>
                 <p className="mt-1 text-indigo-100">
-                  Welcome. Check-in. Lock the relationship. Stop churn before it starts.
+                  {t('stopChurnBeforeStarts')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <button className="bg-white text-indigo-800 px-4 py-2 rounded-xl font-bold shadow hover:scale-105 transition">
                   <Send className="inline -mt-1 mr-1" size={16} />
-                  Send Jan 1 Blast
+                  {t('sendJan1Blast')}
                 </button>
                 <button className="bg-white/10 border border-white/30 text-white px-4 py-2 rounded-xl font-bold hover:bg-white/20 transition">
                   <HeartHandshake className="inline -mt-1 mr-1" size={16} />
-                  Open Service Desk
+                  {t('openServiceDesk')}
                 </button>
                 <button className="bg-white/10 border border-white/30 text-white px-4 py-2 rounded-xl font-bold hover:bg-white/20 transition">
                   <Award className="inline -mt-1 mr-1" size={16} />
-                  Referral Toolkit
+                  {t('referralToolkit')}
                 </button>
               </div>
             </div>
             {/* KPI Tiles */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              <KPI label="OEP Cohort" value={cohortSize} icon={<Users className="w-5 h-5" />} />
-              <KPI label="Follow-ups Sent" value={followupsSent} icon={<Send className="w-5 h-5" />} />
-              <KPI label="Churn" value={churnCount} icon={<TrendingDown className="w-5 h-5" />} />
-              <KPI label="Retention" value={retentionPct} icon={<TrendingUp className="w-5 h-5" />} />
+              <KPI label={t('oepCohort')} value={cohortSize} icon={<Users className="w-5 h-5" />} />
+              <KPI label={t('followUpsSent')} value={followupsSent} icon={<Send className="w-5 h-5" />} />
+              <KPI label={t('churn')} value={churnCount} icon={<TrendingDown className="w-5 h-5" />} />
+              <KPI label={t('retention')} value={retentionPct} icon={<TrendingUp className="w-5 h-5" />} />
             </div>
           </section>
 
           {/* AUTOMATIONS */}
           <section className="bg-white rounded-3xl shadow p-6 border border-indigo-100">
             <h3 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
-              <Calendar className="text-indigo-700" /> OEP Automations
+              <Calendar className="text-indigo-700" /> {t('oepAutomations')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[
-                ["jan1", "Jan 1: Congrats / Cards Arrived?"],
-                ["feb1", "Feb 1: First Full Month Check-in"],
-                ["mar1", "Mar 1: Follow-up & Referrals"],
-                ["newsletter", "Monthly Newsletters for Cohort"],
-                ["requireApproval", "Require Approval"],
+                ["jan1", t('jan1Congrats')],
+                ["feb1", t('feb1FirstMonth')],
+                ["mar1", t('mar1FollowUpReferrals')],
+                ["newsletter", t('monthlyNewslettersCohort')],
+                ["requireApproval", t('requireApproval')],
               ].map(([key, label]) => (
                 <ToggleCard key={key} label={label} on={automations[key]} onClick={() => toggleAuto(key)} />
               ))}
@@ -433,32 +533,49 @@ export default function OEPHub({ clients: propClients }) {
           <section className="bg-white rounded-3xl shadow p-6 border border-indigo-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
-                <Mail className="text-indigo-700" /> Templates
+                <Mail className="text-indigo-700" /> {t('templates')}
               </h3>
               <div className="flex items-center gap-2">
-                <Filter size={16} className="text-gray-400" />
-                <input
-                  type="text"
-                  className="rounded-lg border px-2 py-1 text-sm"
-                  placeholder="Search templates..."
-                  value={searchTemplate}
-                  onChange={(e) => setSearchTemplate(e.target.value)}
-                />
+                <button
+                  onClick={() => setTemplateLibraryOpen(true)}
+                  className="bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold shadow hover:bg-indigo-800"
+                >
+                  <Eye className="inline -mt-1 mr-1" size={16} />
+                  View All Templates
+                </button>
+                <button
+                  onClick={handleCreateTemplate}
+                  className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-700"
+                >
+                  <Plus size={14} className="inline -mt-0.5 mr-1" />
+                  New Template
+                </button>
               </div>
+            </div>
+            <div className="flex items-center gap-2 mb-4">
+              <Filter size={16} className="text-gray-400" />
+              <input
+                type="text"
+                className="rounded-lg border px-2 py-1 text-sm flex-1"
+                placeholder={t('searchTemplatesPlaceholder')}
+                value={searchTemplate}
+                onChange={(e) => setSearchTemplate(e.target.value)}
+              />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {templates
                 .filter(
-                  (t) =>
-                    t.title.toLowerCase().includes(searchTemplate.toLowerCase()) ||
-                    t.tags.join(" ").toLowerCase().includes(searchTemplate.toLowerCase())
+                  (tpl) =>
+                    (tpl.title || t(tpl.titleKey) || "").toLowerCase().includes(searchTemplate.toLowerCase()) ||
+                    tpl.tags.join(" ").toLowerCase().includes(searchTemplate.toLowerCase())
                 )
+                .slice(0, 4)
                 .map((tpl, i) => (
-                  <div key={i} className="p-4 rounded-2xl border hover:border-indigo-300 transition bg-indigo-50/40">
+                  <div key={tpl.id || i} className="p-4 rounded-2xl border hover:border-indigo-300 transition bg-indigo-50/40">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-bold text-gray-900">
-                          {tpl.title} <span className="text-xs text-indigo-500">({tpl.type})</span>
+                          {tpl.title || t(tpl.titleKey)} <span className="text-xs text-indigo-500">({tpl.type})</span>
                         </div>
                         <div className="flex gap-1 mt-1 flex-wrap">
                           {tpl.tags.map((tag, j) => (
@@ -467,23 +584,31 @@ export default function OEPHub({ clients: propClients }) {
                             </span>
                           ))}
                           {tpl.featured && (
-                            <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">Featured</span>
+                            <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">{t('featured')}</span>
                           )}
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <button className="text-indigo-700 hover:underline text-xs" onClick={() => handlePreviewTemplate(tpl)}>
                           <Eye size={16} className="inline -mt-0.5 mr-1" />
-                          Preview
+                          {t('preview')}
                         </button>
                         <button className="text-green-700 hover:underline text-xs" onClick={() => handleInsertTemplate(tpl)}>
-                          Insert
+                          {t('insert')}
                         </button>
                       </div>
                     </div>
                   </div>
                 ))}
             </div>
+            {templates.length > 4 && (
+              <button
+                onClick={() => setTemplateLibraryOpen(true)}
+                className="mt-4 text-indigo-700 hover:underline text-sm font-semibold"
+              >
+                View all {templates.length} templates →
+              </button>
+            )}
           </section>
         </div>
 
@@ -492,7 +617,7 @@ export default function OEPHub({ clients: propClients }) {
           {/* ACTIVITY */}
           <section className="bg-white rounded-3xl shadow p-6 border border-indigo-100">
             <h3 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
-              <MessageSquare className="text-indigo-700" /> Activity Feed
+              <MessageSquare className="text-indigo-700" /> {t('activityFeed')}
             </h3>
             <div className="max-h-72 overflow-y-auto divide-y">
               {activity.map((a, idx) => (
@@ -507,22 +632,22 @@ export default function OEPHub({ clients: propClients }) {
                   <div className="flex items-center gap-2">
                     {a.status === "delivered" && (
                       <span className="text-green-600 flex items-center gap-1">
-                        <CheckCircle2 size={16} /> Delivered
+                        <CheckCircle2 size={16} /> {t('delivered')}
                       </span>
                     )}
                     {a.status === "opened" && (
                       <span className="text-indigo-600 flex items-center gap-1">
-                        <Eye size={16} /> Opened
+                        <Eye size={16} /> {t('opened')}
                       </span>
                     )}
                     {a.status === "failed" && (
                       <>
                         <span className="text-red-600 flex items-center gap-1">
-                          <XCircle size={16} /> Failed
+                          <XCircle size={16} /> {t('failed')}
                         </span>
                         <button className="text-indigo-700 underline text-xs" onClick={() => handleResend(idx)}>
                           <RefreshCw size={14} className="inline -mt-0.5 mr-1" />
-                          Resend
+                          {t('resend')}
                         </button>
                         <span className="text-xs text-red-400">{a.error}</span>
                       </>
@@ -532,7 +657,7 @@ export default function OEPHub({ clients: propClients }) {
               ))}
             </div>
             <button className="mt-3 text-xs text-indigo-900 flex items-center gap-1 hover:underline" onClick={handleExportCSV}>
-              <Download size={16} /> Export (CSV)
+              <Download size={16} /> {t('exportCsv')}
             </button>
           </section>
 
@@ -541,7 +666,7 @@ export default function OEPHub({ clients: propClients }) {
             {aiOpen ? (
               <div className="w-full bg-white shadow-2xl rounded-2xl border border-indigo-200 flex flex-col">
                 <div className="bg-indigo-900 text-white px-4 py-2 rounded-t-2xl flex justify-between items-center">
-                  <span className="font-semibold">OEP Retention Helper</span>
+                  <span className="font-semibold">{t('oepRetentionHelper')}</span>
                   <button className="text-white text-xl" onClick={() => setAiOpen(false)} title="Close">
                     ×
                   </button>
@@ -561,13 +686,13 @@ export default function OEPHub({ clients: propClients }) {
                 <form className="border-t flex items-center gap-2 p-2" onSubmit={handleAiSend}>
                   <input
                     className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                    placeholder="Ask for a Feb 1 check-in, churn save, or referral text…"
+                    placeholder={t('askForCheckin')}
                     value={aiInput}
                     onChange={(e) => setAiInput(e.target.value)}
                     autoFocus
                   />
                   <button className="bg-indigo-700 text-white px-3 py-2 rounded-lg hover:bg-indigo-900" type="submit">
-                    Send
+                    {t('send')}
                   </button>
                 </form>
               </div>
@@ -578,7 +703,7 @@ export default function OEPHub({ clients: propClients }) {
                 title="Open OEP Retention Helper"
               >
                 <MessageSquare className="w-5 h-5" />
-                <span className="font-bold">Open AI Helper</span>
+                <span className="font-bold">{t('openAiHelper')}</span>
               </button>
             )}
           </div>
@@ -590,11 +715,11 @@ export default function OEPHub({ clients: propClients }) {
         <section className="bg-white rounded-3xl shadow p-6 border border-indigo-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
-              <Users className="text-indigo-700" /> OEP Cohort
+              <Users className="text-indigo-700" /> {t('oepCohort')}
             </h3>
             <button onClick={openAdd} className="bg-indigo-800 text-white px-4 py-2 rounded-xl font-bold shadow hover:bg-indigo-900">
               <UserPlus className="inline -mt-1 mr-1" size={16} />
-              Add Client
+              {t('addOepClient')}
             </button>
           </div>
 
@@ -602,14 +727,14 @@ export default function OEPHub({ clients: propClients }) {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
-                  <th className="py-2 pr-4">Name</th>
-                  <th className="py-2 pr-4">Effective</th>
-                  <th className="py-2 pr-4">Phone</th>
-                  <th className="py-2 pr-4">Email</th>
-                  <th className="py-2 pr-4">Status</th>
-                  <th className="py-2 pr-4">Newsletter</th>
-                  <th className="py-2 pr-4">Plan</th>
-                  <th className="py-2 pr-4">Actions</th>
+                  <th className="py-2 pr-4">{t('name')}</th>
+                  <th className="py-2 pr-4">{t('effectiveDateLabel')}</th>
+                  <th className="py-2 pr-4">{t('phone')}</th>
+                  <th className="py-2 pr-4">{t('email')}</th>
+                  <th className="py-2 pr-4">{t('status')}</th>
+                  <th className="py-2 pr-4">{t('monthlyNewsletterLabel')}</th>
+                  <th className="py-2 pr-4">{t('outreachPlan')}</th>
+                  <th className="py-2 pr-4">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -636,7 +761,7 @@ export default function OEPHub({ clients: propClients }) {
                         {c.status}
                       </span>
                     </td>
-                    <td className="py-2 pr-4">{c.newsletter ? "Yes" : "No"}</td>
+                    <td className="py-2 pr-4">{c.newsletter ? t('yesLabel') : t('noLabel')}</td>
                     <td className="py-2 pr-4">
                       <div className="text-xs text-gray-600">
                         Jan1 {c.outreachPlan.jan1 ? "•" : "×"} / Feb1 {c.outreachPlan.feb1 ? "•" : "×"} / Mar1{" "}
@@ -646,16 +771,16 @@ export default function OEPHub({ clients: propClients }) {
                     <td className="py-2 pr-4">
                       <div className="flex gap-2">
                         <button className="text-indigo-700 text-xs underline" onClick={() => sendFollowUp(c, "jan1")}>
-                          Send Jan 1
+                          {t('sendJan1')}
                         </button>
                         <button className="text-indigo-700 text-xs underline" onClick={() => sendFollowUp(c, "feb1")}>
-                          Send Feb 1
+                          {t('sendFeb1')}
                         </button>
                         <button className="text-indigo-700 text-xs underline" onClick={() => sendFollowUp(c, "mar1")}>
-                          Send Mar 1
+                          {t('sendMar1')}
                         </button>
                         <button className="text-gray-700 text-xs underline" onClick={() => editClient(c)}>
-                          Edit
+                          {t('edit')}
                         </button>
                       </div>
                     </td>
@@ -664,7 +789,7 @@ export default function OEPHub({ clients: propClients }) {
                 {oepCohort.length === 0 && (
                   <tr>
                     <td className="py-6 text-gray-500" colSpan={8}>
-                      No clients in the OEP cohort yet. Add one or sync from your Clients list.
+                      {t('noClientsInOepCohort')}
                     </td>
                   </tr>
                 )}
@@ -674,43 +799,42 @@ export default function OEPHub({ clients: propClients }) {
 
           {/* Add/Edit modal */}
           {addOpen && (
-            <Modal onClose={() => setAddOpen(false)} title={editing ? "Edit OEP Client" : "Add OEP Client"}>
+            <Modal onClose={() => setAddOpen(false)} title={editing ? t('editOepClient') : t('addOepClient')}>
               <form onSubmit={saveClient} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Input name="firstName" label="First Name" defaultValue={editing?.firstName} required />
-                  <Input name="lastName" label="Last Name" defaultValue={editing?.lastName} required />
-                  <Input name="phone" label="Phone" defaultValue={editing?.phone} />
-                  <Input name="email" label="Email" defaultValue={editing?.email} />
-                  <Input name="effectiveDate" type="date" label="Effective Date" defaultValue={editing?.effectiveDate} required />
-                  <Select name="status" label="Status" defaultValue={editing?.status ?? "Active"} options={["Active", "Switched", "Cancelled"]} />
+                  <Input name="firstName" label={t('firstName')} defaultValue={editing?.firstName} required />
+                  <Input name="lastName" label={t('lastName')} defaultValue={editing?.lastName} required />
+                  <Input name="phone" label={t('phone')} defaultValue={editing?.phone} />
+                  <Input name="email" label={t('email')} defaultValue={editing?.email} />
+                  <Input name="effectiveDate" type="date" label={t('effectiveDateLabel')} defaultValue={editing?.effectiveDate} required />
+                  <Select name="status" label={t('status')} defaultValue={editing?.status ?? "Active"} options={[t('activeStatus'), t('switchedStatus'), t('cancelledStatus')]} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Checkbox name="firstWithAgent" label="First Time with Agent" defaultChecked={!!editing?.firstWithAgent || !editing} />
-                  <Checkbox name="newsletter" label="Monthly Newsletter" defaultChecked={!!editing?.newsletter} />
+                  <Checkbox name="firstWithAgent" label={t('firstTimeWithAgent')} defaultChecked={!!editing?.firstWithAgent || !editing} />
+                  <Checkbox name="newsletter" label={t('monthlyNewsletterLabel')} defaultChecked={!!editing?.newsletter} />
                 </div>
 
                 <div>
-                  <div className="text-sm font-semibold text-gray-800 mb-1">Outreach Plan</div>
+                  <div className="text-sm font-semibold text-gray-800 mb-1">{t('outreachPlan')}</div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    <Checkbox name="jan1" label="Jan 1" defaultChecked={editing?.outreachPlan?.jan1 ?? true} />
-                    <Checkbox name="feb1" label="Feb 1" defaultChecked={editing?.outreachPlan?.feb1 ?? true} />
-                    <Checkbox name="mar1" label="Mar 1" defaultChecked={editing?.outreachPlan?.mar1 ?? true} />
+                    <Checkbox name="jan1" label={t('sendJan1')} defaultChecked={editing?.outreachPlan?.jan1 ?? true} />
+                    <Checkbox name="feb1" label={t('sendFeb1')} defaultChecked={editing?.outreachPlan?.feb1 ?? true} />
+                    <Checkbox name="mar1" label={t('sendMar1')} defaultChecked={editing?.outreachPlan?.mar1 ?? true} />
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <button type="submit" className="bg-indigo-800 text-white px-5 py-2 rounded-xl font-bold shadow hover:bg-indigo-900">
-                    {editing ? "Save Changes" : "Add Client"}
+                    {editing ? t('saveChanges') : t('addOepClient')}
                   </button>
                   <button type="button" onClick={() => setAddOpen(false)} className="bg-gray-100 text-gray-700 px-5 py-2 rounded-xl hover:bg-gray-200">
-                    Cancel
+                    {t('cancel')}
                   </button>
                 </div>
 
                 <div className="text-xs text-gray-500">
-                  Clients added here are filtered into the OEP cohort if their effective date is between{" "}
-                  <b>{season.cohortStart.toLocaleDateString()}</b> and <b>{season.cohortEnd.toLocaleDateString()}</b> and it’s their first time with the agent.
+                  {t('cohortWindowNote', { start: season.cohortStart.toLocaleDateString(), end: season.cohortEnd.toLocaleDateString() })}
                 </div>
               </form>
             </Modal>
@@ -720,25 +844,213 @@ export default function OEPHub({ clients: propClients }) {
 
       {/* TEMPLATE PREVIEW MODAL */}
       {previewTemplate && (
-        <Modal onClose={() => setPreviewTemplate(null)} title={`${previewTemplate.title} Preview`}>
+        <Modal onClose={() => setPreviewTemplate(null)} title={`${previewTemplate.title || t(previewTemplate.titleKey)} ${t('preview')}`}>
           <pre className="bg-indigo-50 rounded p-4 whitespace-pre-wrap mb-4 text-gray-900 text-sm">
-            {previewTemplate.content}
+            {previewTemplate.subject && `Subject: ${previewTemplate.subject}\n\n`}{previewTemplate.content}
           </pre>
-          <div className="text-sm font-semibold mb-1">Personalization Example</div>
+          <div className="text-sm font-semibold mb-1">{t('personalizationExample')}</div>
           <pre className="bg-indigo-100 rounded p-4 whitespace-pre-wrap text-indigo-800 text-sm">
-            {previewTemplate.content
+            {((previewTemplate.subject ? `Subject: ${previewTemplate.subject}\n\n` : "") + previewTemplate.content)
               .replaceAll("{ClientName}", "Jane Albright")
               .replaceAll("{AgentName}", "Scott Fluegel")
-              .replaceAll("{AgentPhone}", "(859) 555-1234")}
+              .replaceAll("{AgentPhone}", "(859) 555-1234")
+              .replaceAll("{PolicyYear}", String(season.seasonYear))}
           </pre>
           <div className="flex gap-3 mt-4">
             <button className="bg-indigo-800 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-indigo-900" onClick={() => handleTestSend(previewTemplate.content)}>
-              Test Send (demo)
+              {t('testSend')} (demo)
             </button>
             <button className="bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-green-800" onClick={() => handleInsertTemplate(previewTemplate)}>
-              Insert
+              {t('insert')}
+            </button>
+            <button className="bg-gray-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-gray-700" onClick={() => { setPreviewTemplate(null); handleEditTemplate(previewTemplate); }}>
+              <Edit2 size={14} className="inline -mt-0.5 mr-1" />
+              Edit
             </button>
           </div>
+          <div className="mt-4">
+            <div className="text-xs text-gray-600 mb-2">{t('mergeTags')}:</div>
+            <div className="flex flex-wrap gap-2">
+              {MERGE_TAGS.map((tag, i) => (
+                <span key={i} className="bg-indigo-100 px-3 py-1 rounded-full font-mono text-xs text-indigo-900">
+                  {tag.tag} <span className="text-gray-500">({tag.label})</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* TEMPLATE LIBRARY MODAL */}
+      {templateLibraryOpen && (
+        <Modal onClose={() => setTemplateLibraryOpen(false)} title="Template Library" wide>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Filter size={16} className="text-gray-400" />
+              <input
+                type="text"
+                className="rounded-lg border px-3 py-2 text-sm flex-1"
+                placeholder="Search templates..."
+                value={searchTemplate}
+                onChange={(e) => setSearchTemplate(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={handleCreateTemplate}
+              className="ml-4 bg-green-600 text-white px-4 py-2 rounded-xl font-bold shadow hover:bg-green-700"
+            >
+              <Plus size={16} className="inline -mt-0.5 mr-1" />
+              New Template
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+            {templates
+              .filter(
+                (tpl) =>
+                  (tpl.title || t(tpl.titleKey) || "").toLowerCase().includes(searchTemplate.toLowerCase()) ||
+                  tpl.tags.join(" ").toLowerCase().includes(searchTemplate.toLowerCase())
+              )
+              .map((tpl, i) => (
+                <div key={tpl.id || i} className="p-4 rounded-2xl border hover:border-indigo-300 transition bg-white shadow-sm">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="font-bold text-gray-900">
+                        {tpl.title || t(tpl.titleKey)}
+                      </div>
+                      <div className="text-xs text-indigo-500">{tpl.type}</div>
+                    </div>
+                    {tpl.featured && (
+                      <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">Featured</span>
+                    )}
+                  </div>
+                  {tpl.subject && (
+                    <div className="text-xs text-gray-500 mb-2 truncate">Subject: {tpl.subject}</div>
+                  )}
+                  <div className="text-xs text-gray-600 mb-3 line-clamp-3">
+                    {tpl.content.slice(0, 100)}...
+                  </div>
+                  <div className="flex gap-1 mb-3 flex-wrap">
+                    {tpl.tags.map((tag, j) => (
+                      <span key={j} className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded text-xs font-medium"
+                      onClick={() => { setTemplateLibraryOpen(false); handlePreviewTemplate(tpl); }}
+                    >
+                      <Eye size={14} className="inline -mt-0.5 mr-1" />
+                      Preview
+                    </button>
+                    <button
+                      className="text-green-700 hover:bg-green-50 px-2 py-1 rounded text-xs font-medium"
+                      onClick={() => { setTemplateLibraryOpen(false); handleEditTemplate(tpl); }}
+                    >
+                      <Edit2 size={14} className="inline -mt-0.5 mr-1" />
+                      Edit
+                    </button>
+                    <button
+                      className="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs font-medium"
+                      onClick={() => handleDeleteTemplate(tpl.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </Modal>
+      )}
+
+      {/* TEMPLATE EDIT MODAL */}
+      {editingTemplate && (
+        <Modal onClose={() => setEditingTemplate(null)} title={editingTemplate.id ? "Edit Template" : "Create Template"}>
+          <form onSubmit={handleSaveTemplate} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Title</label>
+              <input
+                type="text"
+                className="w-full border rounded-lg p-2"
+                value={editingTemplate.title || ""}
+                onChange={(e) => setEditingTemplate({ ...editingTemplate, title: e.target.value })}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-1">Type</label>
+                <select
+                  className="w-full border rounded-lg p-2"
+                  value={editingTemplate.type || "Email"}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, type: e.target.value })}
+                >
+                  <option value="Email">Email</option>
+                  <option value="SMS">SMS</option>
+                </select>
+              </div>
+              <div>
+                <label className="flex items-center gap-2 mt-6">
+                  <input
+                    type="checkbox"
+                    checked={editingTemplate.featured || false}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, featured: e.target.checked })}
+                  />
+                  <span className="text-sm font-semibold text-gray-800">Featured</span>
+                </label>
+              </div>
+            </div>
+            {editingTemplate.type === "Email" && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-1">Subject</label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg p-2"
+                  value={editingTemplate.subject || ""}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, subject: e.target.value })}
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Content</label>
+              <textarea
+                className="w-full border rounded-lg p-2 h-40"
+                value={editingTemplate.content || ""}
+                onChange={(e) => setEditingTemplate({ ...editingTemplate, content: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Tags (comma-separated)</label>
+              <input
+                type="text"
+                className="w-full border rounded-lg p-2"
+                value={(editingTemplate.tags || []).join(", ")}
+                onChange={(e) => setEditingTemplate({ ...editingTemplate, tags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="bg-indigo-800 text-white px-5 py-2 rounded-xl font-bold shadow hover:bg-indigo-900"
+              >
+                Save Template
+              </button>
+              <button type="button" onClick={() => setEditingTemplate(null)} className="bg-gray-100 text-gray-700 px-5 py-2 rounded-xl hover:bg-gray-200">
+                Cancel
+              </button>
+            </div>
+            <div className="mt-4 text-xs text-gray-600">
+              <div className="font-semibold mb-1">Available merge tags:</div>
+              <div className="flex flex-wrap gap-2">
+                {MERGE_TAGS.map((tag, i) => (
+                  <code key={i} className="bg-gray-100 px-2 py-0.5 rounded">{tag.tag}</code>
+                ))}
+              </div>
+            </div>
+          </form>
         </Modal>
       )}
     </div>
@@ -778,10 +1090,10 @@ function ToggleCard({ label, on, onClick }) {
   );
 }
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, wide }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl relative">
+      <div className={`bg-white rounded-2xl ${wide ? 'w-full max-w-5xl' : 'w-full max-w-3xl'} shadow-xl relative max-h-[90vh] overflow-y-auto`}>
         <button className="absolute top-3 right-4 text-gray-400 text-2xl" onClick={onClose}>
           &times;
         </button>

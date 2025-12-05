@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start http://localhost:3000)",
+      "Bash(start http://localhost:3000/clients/import)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 22168 -Force\")",
+      "Bash(npm start)",
+      "Bash(node index.js:*)",
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(git -C \"C:\\Users\\flueg\\Documents\\GitHub\\pro-irpfinal\" status --porcelain)",
+      "Bash(grep:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout /t 15)",
+      "Bash(timeout /t 5)",
+      "Bash(netstat:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 22116 -Force\")",
+      "WebSearch",
+      "Bash(dir:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

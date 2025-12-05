@@ -11,3 +11,25 @@ yarn-error.log*
 .env.*
 .DS_Store
 .vscode/
+frontend/
+__safety_backup/
+
+# HIPAA/PHI - NEVER commit these!
+backend/uploads/
+backend/data/
+*.csv
+*.xlsx
+*.pdf
+
+# Backup files
+*.bak
+*.backup
+*.before-*
+
+# Security
+*.pem
+*.key
+*.cert
+ssl/
+certs/
+google-translate-credentials.json

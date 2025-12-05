@@ -10,6 +10,9 @@ import RiskList from "../components/RiskList";
 import AlertsWidget from "../components/AlertsWidget";
 import QuickLookup from "../components/QuickLookup";
 import SectionLinks from "../components/SectionLinks";
+import MorningBriefing from "../components/MorningBriefing";
+import PriorityCallQueue from "../components/PriorityCallQueue";
+import RiskDistributionChart from "../components/RiskDistributionChart";
 
 // --- Calendar imports ---
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-calendar";
@@ -76,12 +79,21 @@ const Dashboard = () => (
   >
     <DashboardHeader />
     <div className="max-w-7xl mx-auto space-y-8">
+      {/* Morning Briefing - Full Width */}
+      <MorningBriefing />
+
       <MetricCards />
+
+      {/* Risk Distribution Chart */}
+      <RiskDistributionChart />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Main column */}
         <div className="md:col-span-2 space-y-8">
-          {/* Demo retention line & churn pie */}
+          {/* Priority Call Queue */}
+          <PriorityCallQueue limit={8} />
+
+          {/* Retention Charts */}
           <RetentionCharts />
 
           <TaskList />
@@ -90,28 +102,6 @@ const Dashboard = () => (
 
         {/* Sidebar widgets */}
         <div className="space-y-8">
-          {/* --- Today's Calendar Widget --- */}
-          <div className="bg-white rounded-2xl shadow-md p-4">
-            <div className="font-bold text-[#172A3A] text-lg mb-2 flex items-center gap-2">
-              <span role="img" aria-label="calendar">📅</span>
-              Today's Calendar
-            </div>
-            <BigCalendar
-              localizer={localizer}
-              events={getTodayEvents(DEMO_EVENTS)}
-              startAccessor="start"
-              endAccessor="end"
-              defaultView={Views.DAY}
-              views={["day"]}
-              style={{ height: 260, fontSize: "0.98rem" }}
-              toolbar={false}
-              eventPropGetter={eventPropGetter}
-              min={new Date(new Date().setHours(6, 0, 0, 0))}
-              max={new Date(new Date().setHours(20, 0, 0, 0))}
-            />
-          </div>
-          {/* --- End Calendar Widget --- */}
-
           {/* --- At Risk Clients (RiskList) --- */}
           <RiskList />
           {/* --- End At Risk Clients --- */}

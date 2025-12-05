@@ -12,14 +12,32 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "@google-cloud/translate": "^9.3.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^10.8.0",
     "@sentry/profiling-node": "^10.8.0",
+    "@vitalets/google-translate-api": "^9.2.1",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
+    "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "helmet": "^8.1.0"
+    "express-rate-limit": "^8.2.1",
+    "googleapis": "^166.0.0",
+    "helmet": "^8.1.0",
+    "isomorphic-fetch": "^3.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.16.3",
+    "twilio": "^5.10.6"
   },
   "devDependencies": {
+    "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.10"
   }
 }

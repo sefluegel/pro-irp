@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch(domain:bluebutton.cms.gov)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

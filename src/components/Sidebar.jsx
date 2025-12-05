@@ -1,7 +1,8 @@
 // /frontend/src/components/Sidebar.jsx
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   Users,
@@ -12,10 +13,35 @@ import {
   UserPlus,
   CalendarDays, // AEP Wizard icon
   Shield,       // OEP Hub icon
+  BarChart3,    // Founder Dashboard icon
+  Calendar,     // Calendar page icon
+  Rocket,       // Founder Command Center icon
 } from "lucide-react";
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const location = useLocation();
+  const [userRole, setUserRole] = useState(null);
+
+  // Fetch user role on mount
+  useEffect(() => {
+    async function fetchUserRole() {
+      try {
+        const BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${BASE}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setUserRole(json.user?.role);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user role:", err);
+      }
+    }
+    fetchUserRole();
+  }, []);
 
   // Days remaining until next Oct 15 (AEP start)
   const daysUntilAEP = (() => {
@@ -40,27 +66,40 @@ const Sidebar = () => {
 
   const dashboardMode = [
     "/dashboard",
+    "/founder-dashboard",
+    "/founder",
     "/clients",
     "/tasks",
+    "/calendar",
     "/settings",
     "/automations",
     "/aep-wizard",
     "/oep",
   ].some((path) => location.pathname.startsWith(path));
 
+  // Build dashboard links (conditionally include Founder Dashboard for admin/FMO/agency)
   const dashboardLinks = [
-    { to: "/dashboard",   label: "Dashboard",  icon: <LayoutDashboard size={20} /> },
-    { to: "/aep-wizard",  label: "AEP Wizard", icon: <CalendarDays size={20} />, badge: `${daysUntilAEP}d` },
-    { to: "/oep",         label: "OEP Hub",    icon: <Shield size={20} />,       badge: oepBadge },
-    { to: "/clients",     label: "Clients",    icon: <Users size={20} /> },
-    { to: "/tasks",       label: "Tasks",      icon: <ListChecks size={20} /> },
-    { to: "/automations", label: "Automations",icon: <Smile size={20} /> },
-    { to: "/settings",    label: "Settings",   icon: <Settings size={20} /> },
+    { to: "/dashboard",   label: t('dashboard'),  icon: <LayoutDashboard size={20} /> },
+    // Only show Founder Dashboard for admin/FMO/agency (not agents)
+    ...(userRole && ["admin", "fmo", "agency"].includes(userRole)
+      ? [
+          { to: "/founder", label: t('commandCenter') || 'Command Center', icon: <Rocket size={20} /> },
+          { to: "/founder-dashboard", label: t('founderMetrics'), icon: <BarChart3 size={20} /> },
+        ]
+      : []
+    ),
+    { to: "/aep-wizard",  label: t('aepWizard'), icon: <CalendarDays size={20} />, badge: `${daysUntilAEP}d` },
+    { to: "/oep",         label: t('oepHub'),    icon: <Shield size={20} />,       badge: oepBadge },
+    { to: "/clients",     label: t('clients'),    icon: <Users size={20} /> },
+    { to: "/tasks",       label: t('tasks'),      icon: <ListChecks size={20} /> },
+    { to: "/calendar",    label: t('calendar'),   icon: <Calendar size={20} /> },
+    { to: "/automations", label: t('automations'),icon: <Smile size={20} /> },
+    { to: "/settings",    label: t('settings'),   icon: <Settings size={20} /> },
   ];
 
   const authLinks = [
-    { to: "/",       label: "Login",   icon: <LogIn size={20} /> },
-    { to: "/signup", label: "Sign Up", icon: <UserPlus size={20} /> },
+    { to: "/",       label: t('login'),   icon: <LogIn size={20} /> },
+    { to: "/signup", label: t('signUp'), icon: <UserPlus size={20} /> },
   ];
 
   const links = dashboardMode ? dashboardLinks : authLinks;
@@ -118,9 +157,9 @@ const Sidebar = () => {
                         }
                       `}
                       title={
-                        label === "AEP Wizard"
-                          ? "Days until AEP (Oct 15)"
-                          : "OEP Season (Jan–Mar)"
+                        label === t('aepWizard')
+                          ? t('daysUntilAEP')
+                          : t('oepSeason')
                       }
                     >
                       {badge}
@@ -136,10 +175,14 @@ const Sidebar = () => {
       {dashboardMode && (
         <div className="mb-8 mt-auto px-6">
           <button
-            className="flex items-center gap-2 w-full py-2 px-3 rounded-xl transition font-bold shadow"
+            onClick={() => {
+              localStorage.removeItem('token');
+              window.location.href = '/login';
+            }}
+            className="flex items-center gap-2 w-full py-2 px-3 rounded-xl transition font-bold shadow hover:opacity-90"
             style={{ background: "#FFB800", color: "#172A3A" }}
           >
-            Log Out
+            {t('logOut')}
           </button>
         </div>
       )}

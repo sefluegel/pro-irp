@@ -1,37 +1,33 @@
 // /frontend/src/pages/AEPWizard.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Zap, CalendarDays, Send, Eye, MessageSquare, AlertCircle, XCircle,
   CheckCircle2, Plus, Edit2, Download, RefreshCw, Star, Eye as EyeIcon,
   ListChecks, PhoneCall, Mail, Calendar, UserPlus, User, Filter, ArrowUpRight,
-  HelpCircle
+  HelpCircle, Trash2, Save
 } from "lucide-react";
+import {
+  getAepTemplates, createAepTemplate, updateAepTemplate, deleteAepTemplate,
+  getAepAutomations, updateAepAutomations,
+  getAepCountdownContacts, addAepCountdownContact, updateAepCountdownContact, deleteAepCountdownContact, sendAepDrip,
+  getAepActivity, resendAepActivity,
+  getAepAnalytics, getAepMergeTags
+} from "../api";
 
 /**
- * AEP WIZARD – front-end only
- * - Splash screen with animated countdown to Oct 15 (auto-transitions after ~2.5s)
- * - Hero dashboard with stats & quick actions
- * - Outreach automations (pre-AEP drips, ANOC explainer, booking nudges)
- * - Templates library w/ preview & test-send (alert)
- * - Activity feed w/ resend
- * - Analytics tiles
- * - "Countdown List" (year-round capture for folks who must wait for AEP)
- *   - Add contact modal, outreach plan toggles, newsletter, status tracking
- * - Sticky AI helper (stub)
- * - TailwindCSS + lucide-react
+ * AEP WIZARD – Connected to real backend
  */
 
 /* -------------------- helpers -------------------- */
 
-// Get next Oct 15 from "now"
 function getNextOct15(now = new Date()) {
   const year = now.getMonth() > 9 || (now.getMonth() === 9 && now.getDate() > 15)
     ? now.getFullYear() + 1
     : now.getFullYear();
-  return new Date(year, 9, 15, 0, 0, 0, 0); // month idx 9 = October
+  return new Date(year, 9, 15, 0, 0, 0, 0);
 }
 
-// Format remaining ms -> {d,h,m,s}
 function breakdown(ms) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const d = Math.floor(totalSeconds / (60 * 60 * 24));
@@ -41,225 +37,240 @@ function breakdown(ms) {
   return { d, h, m, s };
 }
 
-/* -------------------- fake data -------------------- */
+function formatTime(timestamp) {
+  if (!timestamp) return '';
+  const d = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
-const FAKE_ANALYTICS = [
-  { label: "Pre-AEP Sends", value: 1802, icon: <Send className="w-6 h-6" /> },
-  { label: "Open Rate", value: "62%", icon: <Eye className="w-6 h-6" /> },
-  { label: "Click Rate", value: "21%", icon: <ArrowUpRight className="w-6 h-6" /> },
-  { label: "Reply Rate", value: "17%", icon: <MessageSquare className="w-6 h-6" /> },
-  { label: "Bounces", value: "14", icon: <AlertCircle className="w-6 h-6" /> },
-  { label: "Failed Sends", value: "8", icon: <XCircle className="w-6 h-6" /> },
-];
-
-const DEFAULT_TEMPLATES = [
-  {
-    title: "Pre-AEP: Coming Soon",
-    type: "Email",
-    content:
-      "Subject: AEP is coming — let’s prepare!\n\nHi {ClientName},\n\nThe Medicare Annual Enrollment Period starts on October 15. If you'd like a review or have questions, let's get a time on the calendar.\n\nBest,\n{AgentName}\n{AgentPhone}",
-    tags: ["Pre-AEP", "Email"],
-    featured: true,
-  },
-  {
-    title: "ANOC Explainer",
-    type: "Email",
-    content:
-      "Subject: Your ANOC — what it means\n\nHi {ClientName},\n\nYou’ll receive the Annual Notice of Change (ANOC) from your plan. It explains any updates for {PolicyYear}. If anything looks unclear, reply here and I’ll help review it.\n\nBest,\n{AgentName}",
-    tags: ["ANOC", "Education"],
-  },
-  {
-    title: "AEP Booking Nudge",
-    type: "SMS",
-    content:
-      "Hi {ClientName}, AEP starts Oct 15. Want to book your plan review now? Reply YES and I’ll send times. —{AgentName}",
-    tags: ["Booking", "SMS"],
-  },
-  {
-    title: "Final Reminder (Oct 14)",
-    type: "Email",
-    content:
-      "Subject: AEP starts tomorrow — ready to review?\n\nHi {ClientName},\n\nAEP begins tomorrow. If you want to look over options, let’s lock in a time.\n\nBest,\n{AgentName}",
-    tags: ["Reminder"],
-  },
-];
-
-const DEFAULT_ACTIVITY = [
-  {
-    time: "2 mins ago",
-    type: "Email",
-    to: "jane.smith@email.com",
-    subject: "AEP is coming — let’s prepare!",
-    status: "delivered",
-    automation: "Pre-AEP Coming Soon",
-  },
-  {
-    time: "1 hr ago",
-    type: "SMS",
-    to: "+1 (859) 555-0198",
-    subject: "—",
-    status: "failed",
-    automation: "Booking Nudge",
-    error: "Phone unreachable",
-  },
-  {
-    time: "Today, 7:00 AM",
-    type: "Email",
-    to: "tim.doe@email.com",
-    subject: "Your ANOC — what it means",
-    status: "opened",
-    automation: "ANOC Explainer",
-  },
-  {
-    time: "Yesterday",
-    type: "Email",
-    to: "alex@email.com",
-    subject: "AEP starts tomorrow — ready to review?",
-    status: "delivered",
-    automation: "Final Reminder",
-  },
-];
-
-const MERGE_TAGS = [
-  { label: "Client Name", tag: "{ClientName}", sample: "Jane Smith" },
-  { label: "Agent Name", tag: "{AgentName}", sample: "Scott Fluegel" },
-  { label: "Agent Phone", tag: "{AgentPhone}", sample: "(859) 555-1234" },
-  { label: "Policy Year", tag: "{PolicyYear}", sample: "2025" },
-];
-
-// “Countdown List” sample contacts
-const DEFAULT_COUNTDOWN_CONTACTS = [
-  {
-    id: 1,
-    firstName: "Mark",
-    lastName: "Henderson",
-    phone: "(859) 555-0101",
-    email: "mark.h@example.com",
-    zip: "41048",
-    county: "Boone",
-    dob: "1957-03-22",
-    language: "English",
-    source: "Event",
-    notes: "Met at health fair; wants PPO, compare Rx.",
-    permissionToContact: true,
-    status: "Warm", // New | Warm | Scheduled | Enrolled | Not Interested
-    newsletter: true,
-    outreachPlan: {
-      twoMonths: true,
-      oneMonth: true,
-      twoWeeks: true,
-      oneWeek: true,
-      aepLive: true,
-    },
-    history: [
-      { date: "2025-07-12", channel: "SMS", subject: "Thanks for stopping by!", status: "delivered" },
-      { date: "2025-08-01", channel: "Email", subject: "AEP is coming — let’s prepare!", status: "opened" },
-    ],
-  },
-];
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return d.toLocaleDateString();
+}
 
 /* -------------------- component -------------------- */
 
 export default function AEPWizard() {
+  const { t } = useTranslation();
   const [showSplash, setShowSplash] = useState(true);
   const [now, setNow] = useState(new Date());
   const target = useMemo(() => getNextOct15(now), [now]);
-  const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
-  const [activity, setActivity] = useState(DEFAULT_ACTIVITY);
-  const [analytics] = useState(FAKE_ANALYTICS);
+
+  // Data from API
+  const [templates, setTemplates] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [analytics, setAnalytics] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [mergeTags, setMergeTags] = useState([]);
+  const [automations, setAutomations] = useState({
+    preAEP60: true, preAEP30: true, preAEP14: true, preAEP7: true,
+    preAEP3: true, preAEP1: true, anocExplainer: true, bookingNudges: true,
+    voicemailDropUI: false, requireApproval: false,
+  });
+
+  // Loading states
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  // UI state
   const [searchTemplate, setSearchTemplate] = useState("");
   const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [editingTemplate, setEditingTemplate] = useState(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState([
-    { sender: "ai", text: "I’m the AEP Wizard Helper. Drafts, subjects, outreach plans—just ask!" },
+    { sender: "ai", text: t('askAboutAutomations') || "Ask me to draft AEP messages, suggest subject lines, or explain automations!" },
   ]);
   const [aiInput, setAiInput] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
-
-  // Automations (front-end toggles only)
-  const [automations, setAutomations] = useState({
-    preAEP60: true,
-    preAEP30: true,
-    preAEP14: true,
-    preAEP7: true,
-    preAEP3: true,
-    preAEP1: true,
-    anocExplainer: true,
-    bookingNudges: true,
-    voicemailDropUI: false,
-    requireApproval: false,
-  });
-
-  // COUNTDOWN LIST (year-round capture)
-  const [contacts, setContacts] = useState(DEFAULT_COUNTDOWN_CONTACTS);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  // Splash auto-transition (2.5s)
+  // Splash auto-transition
   useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), 2500);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    return () => clearTimeout(timer);
   }, []);
 
   // Live clock for countdown
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const remaining = breakdown(target.getTime() - now.getTime());
+
+  // Load data from API
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [templatesRes, automationsRes, contactsRes, activityRes, analyticsRes, mergeTagsRes] = await Promise.all([
+        getAepTemplates().catch(() => ({ data: [] })),
+        getAepAutomations().catch(() => ({ data: {} })),
+        getAepCountdownContacts().catch(() => ({ data: [] })),
+        getAepActivity({ limit: 50 }).catch(() => ({ data: [] })),
+        getAepAnalytics({ days: 30 }).catch(() => ({ data: [] })),
+        getAepMergeTags().catch(() => ({ data: [] })),
+      ]);
+
+      if (templatesRes.data) setTemplates(templatesRes.data);
+      if (automationsRes.data) setAutomations(prev => ({ ...prev, ...automationsRes.data }));
+      if (contactsRes.data) setContacts(contactsRes.data);
+      if (activityRes.data) setActivity(activityRes.data);
+      if (analyticsRes.data) setAnalytics(analyticsRes.data);
+      if (mergeTagsRes.data) setMergeTags(mergeTagsRes.data);
+    } catch (err) {
+      console.error('Load AEP data error:', err);
+      setError('Failed to load data. Please refresh.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   /* -------- AI helper (stub) -------- */
   function handleAiSend(e) {
     e.preventDefault();
     if (!aiInput.trim()) return;
     setAiMessages((prev) => [...prev, { sender: "user", text: aiInput }]);
+    const input = aiInput;
     setAiInput("");
     setTimeout(() => {
       setAiMessages((prev) => [
         ...prev,
         {
           sender: "ai",
-          text:
-            aiInput.toLowerCase().includes("subject")
-              ? "Try: “AEP starts soon — Let’s lock your review.”"
-              : "Here’s a clean, compliant draft:\n\nHi {ClientName}, AEP starts on Oct 15. Would you like to schedule a quick review? —{AgentName}",
+          text: input.toLowerCase().includes("subject")
+            ? 'Try: "AEP starts soon - Let\'s lock your review."'
+            : "Here's a clean, compliant draft:\n\nHi {ClientName}, AEP starts on Oct 15. Would you like to schedule a quick review? - {AgentName}",
         },
       ]);
     }, 700);
   }
 
+  /* -------- Automations -------- */
+  async function toggleAuto(key) {
+    const newValue = !automations[key];
+    setAutomations((a) => ({ ...a, [key]: newValue }));
+    try {
+      await updateAepAutomations({ ...automations, [key]: newValue });
+    } catch (err) {
+      console.error('Toggle automation error:', err);
+      setAutomations((a) => ({ ...a, [key]: !newValue })); // revert
+    }
+  }
+
   /* -------- Activity actions -------- */
-  function handleResend(idx) {
-    setActivity((prev) =>
-      prev.map((a, i) => (i === idx ? { ...a, status: "delivered", error: undefined } : a))
-    );
+  async function handleResend(idx) {
+    const item = activity[idx];
+    if (!item?.id) return;
+    try {
+      await resendAepActivity(item.id);
+      setActivity((prev) =>
+        prev.map((a, i) => (i === idx ? { ...a, status: "resent", error: undefined } : a))
+      );
+    } catch (err) {
+      console.error('Resend error:', err);
+    }
   }
 
   function handleExportCSV() {
-    // Front-end only demo
-    alert("Exported Activity (demo). Hook this to your backend export.");
+    const csv = activity.map(a =>
+      `${a.time},${a.type},${a.to},${a.subject},${a.status},${a.automation || ''}`
+    ).join('\n');
+    const blob = new Blob(['Time,Type,To,Subject,Status,Automation\n' + csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'aep-activity.csv';
+    link.click();
   }
 
   /* -------- Templates -------- */
   function handlePreviewTemplate(tpl) {
     setPreviewTemplate(tpl);
   }
-  function handleInsertTemplate(tpl) {
-    setPreviewTemplate(null);
-    alert("Inserted into editor (demo). Wire this to your composer or workflow builder.");
-  }
-  function handleTestSend(content) {
-    const rendered = MERGE_TAGS.reduce(
-      (acc, t) => acc.replaceAll(t.tag, t.sample),
-      content
-    );
-    alert("Test send (demo):\n\n" + rendered);
+
+  function handleEditTemplate(tpl) {
+    setEditingTemplate({
+      id: tpl.id,
+      title: tpl.title,
+      type: tpl.type,
+      subject: tpl.subject || '',
+      content: tpl.content,
+      tags: tpl.tags || [],
+      is_system: tpl.is_system,
+    });
   }
 
-  /* -------- Automations toggles -------- */
-  function toggleAuto(key) {
-    setAutomations((a) => ({ ...a, [key]: !a[key] }));
+  async function handleSaveTemplate(e) {
+    e.preventDefault();
+    if (!editingTemplate) return;
+
+    setSaving(true);
+    try {
+      if (editingTemplate.id) {
+        const res = await updateAepTemplate(editingTemplate.id, editingTemplate);
+        if (res.data) {
+          setTemplates(prev => prev.map(t => t.id === editingTemplate.id ? res.data : t));
+          // If it was a system template copy, add the new one
+          if (res.message?.includes('copy')) {
+            setTemplates(prev => [...prev, res.data]);
+          }
+        }
+      } else {
+        const res = await createAepTemplate(editingTemplate);
+        if (res.data) {
+          setTemplates(prev => [...prev, res.data]);
+        }
+      }
+      setEditingTemplate(null);
+    } catch (err) {
+      console.error('Save template error:', err);
+      alert('Failed to save template');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteTemplate(tpl) {
+    if (tpl.is_system) {
+      alert('Cannot delete system templates');
+      return;
+    }
+    if (!window.confirm(`Delete template "${tpl.title}"?`)) return;
+
+    try {
+      await deleteAepTemplate(tpl.id);
+      setTemplates(prev => prev.filter(t => t.id !== tpl.id));
+    } catch (err) {
+      console.error('Delete template error:', err);
+      alert('Failed to delete template');
+    }
+  }
+
+  function handleInsertTemplate(tpl) {
+    setPreviewTemplate(null);
+    alert("Template content copied! You can paste it into your email composer or automation workflow.");
+    navigator.clipboard?.writeText(tpl.content);
+  }
+
+  function handleTestSend(content) {
+    let rendered = content;
+    mergeTags.forEach(tag => {
+      rendered = rendered.replace(new RegExp(tag.tag.replace(/[{}]/g, '\\$&'), 'g'), tag.description || tag.key);
+    });
+    alert("Test preview (with sample data):\n\n" + rendered);
   }
 
   /* -------- Countdown List (contacts) -------- */
@@ -268,11 +279,12 @@ export default function AEPWizard() {
     setAddOpen(true);
   }
 
-  function saveContact(e) {
+  async function saveContact(e) {
     e.preventDefault();
+    setSaving(true);
+
     const form = new FormData(e.currentTarget);
     const payload = {
-      id: editing?.id ?? Date.now(),
       firstName: form.get("firstName")?.trim() || "",
       lastName: form.get("lastName")?.trim() || "",
       phone: form.get("phone")?.trim() || "",
@@ -293,16 +305,25 @@ export default function AEPWizard() {
         oneWeek: form.get("oneWeek") === "on",
         aepLive: form.get("aepLive") === "on",
       },
-      history: editing?.history ?? [],
     };
 
-    setContacts((prev) => {
+    try {
       if (editing) {
-        return prev.map((c) => (c.id === editing.id ? payload : c));
+        await updateAepCountdownContact(editing.id, payload);
+        setContacts(prev => prev.map(c => c.id === editing.id ? { ...c, ...payload } : c));
+      } else {
+        const res = await addAepCountdownContact(payload);
+        if (res.data) {
+          setContacts(prev => [{ ...payload, id: res.data.id, history: [] }, ...prev]);
+        }
       }
-      return [payload, ...prev];
-    });
-    setAddOpen(false);
+      setAddOpen(false);
+    } catch (err) {
+      console.error('Save contact error:', err);
+      alert('Failed to save contact');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function editContact(c) {
@@ -310,66 +331,95 @@ export default function AEPWizard() {
     setAddOpen(true);
   }
 
-  function sendNextDrip(c) {
-    // Simple demo: append to history & bump status if needed
-    const nextSubject = "Pre-AEP reminder (demo)";
-    const today = new Date().toISOString().slice(0, 10);
-    setContacts((prev) =>
-      prev.map((x) =>
-        x.id === c.id
-          ? {
-              ...x,
-              status: x.status === "New" ? "Warm" : x.status,
-              history: [...x.history, { date: today, channel: "Email", subject: nextSubject, status: "queued" }],
-            }
-          : x
-      )
-    );
-    alert(`Queued drip to ${c.firstName} ${c.lastName} (demo).`);
+  async function handleDeleteContact(c) {
+    if (!window.confirm(`Delete ${c.firstName} ${c.lastName}?`)) return;
+    try {
+      await deleteAepCountdownContact(c.id);
+      setContacts(prev => prev.filter(x => x.id !== c.id));
+    } catch (err) {
+      console.error('Delete contact error:', err);
+    }
+  }
+
+  async function sendNextDrip(c) {
+    try {
+      await sendAepDrip(c.id, { channel: 'email' });
+      setContacts(prev =>
+        prev.map(x =>
+          x.id === c.id
+            ? {
+                ...x,
+                status: x.status === "New" ? "Warm" : x.status,
+                history: [...(x.history || []), { date: new Date().toISOString().slice(0, 10), channel: "Email", subject: "Pre-AEP reminder", status: "queued" }],
+              }
+            : x
+        )
+      );
+      alert(`Queued drip to ${c.firstName} ${c.lastName}`);
+      loadData(); // Refresh activity
+    } catch (err) {
+      console.error('Send drip error:', err);
+      alert('Failed to send drip');
+    }
   }
 
   /* -------------------- UI -------------------- */
+
+  if (loading && templates.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-blue-100">
+        <div className="text-center">
+          <Zap className="w-12 h-12 text-blue-600 animate-pulse mx-auto mb-4" />
+          <p className="text-blue-900 font-semibold">Loading AEP Wizard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-white via-blue-50 to-blue-100">
       {/* Splash with countdown */}
       {showSplash && (
-        <SplashCountdown
-          remaining={remaining}
-          onSkip={() => setShowSplash(false)}
-        />
+        <SplashCountdown remaining={remaining} onSkip={() => setShowSplash(false)} t={t} />
       )}
 
       {/* HEADER */}
       <div className="sticky top-0 z-20 flex items-center justify-between p-6 border-b bg-white/70 backdrop-blur">
         <div className="flex items-center gap-3">
           <Zap className="w-8 h-8 text-blue-800" />
-          <h1 className="text-3xl font-black tracking-tight text-blue-900">AEP Wizard</h1>
+          <h1 className="text-3xl font-black tracking-tight text-blue-900">{t('aepWizardTitle') || 'AEP Wizard'}</h1>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <CalendarDays className="w-5 h-5 text-blue-700" />
           <span className="font-semibold text-blue-900">
-            AEP starts in: {remaining.d}d {remaining.h}h {remaining.m}m {remaining.s}s
+            {t('aepStartsIn') || 'AEP starts in'} {remaining.d}d {remaining.h}h {remaining.m}m {remaining.s}s
           </span>
           <button
             className="ml-4 bg-white border border-blue-200 text-blue-900 px-3 py-1.5 rounded-xl font-semibold hover:bg-blue-50"
             onClick={() => setHelpOpen(true)}
           >
             <HelpCircle className="inline-block -mt-0.5 mr-1" size={16} />
-            Help
+            {t('help') || 'Help'}
           </button>
         </div>
       </div>
 
+      {/* Error banner */}
+      {error && (
+        <div className="mx-6 mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* HELP modal */}
       {helpOpen && (
-        <Modal onClose={() => setHelpOpen(false)} title="Using AEP Wizard">
+        <Modal onClose={() => setHelpOpen(false)} title={t('usingAepWizard') || 'Using AEP Wizard'}>
           <ul className="space-y-2 text-gray-700">
-            <li>• Use <b>Quick Actions</b> to send pre-AEP blasts, create call lists, and open your scheduler.</li>
-            <li>• <b>Automations</b> control your pre-AEP drips (60/30/14/7/3/1 days), ANOC explainers and booking nudges.</li>
-            <li>• <b>Templates</b> are ready to personalize with merge tags like <code className="bg-blue-100 px-1 rounded">{MERGE_TAGS[0].tag}</code>.</li>
-            <li>• <b>Countdown List</b> stores year-round prospects who must wait until AEP—add, track status, and drip them automatically.</li>
-            <li>• The <b>AI Helper</b> can draft copy, subject lines, and compliance-safer phrasing (demo).</li>
+            <li>• Use Quick Actions to send pre-AEP blasts or open booking</li>
+            <li>• Automations control which drip campaigns run automatically</li>
+            <li>• Templates can be customized with merge tags like <code className="bg-blue-100 px-1 rounded">{'{ClientName}'}</code></li>
+            <li>• Countdown List stores year-round prospects who need to wait for AEP</li>
+            <li>• AI Helper can draft compliant messages for you</li>
           </ul>
         </Modal>
       )}
@@ -382,61 +432,61 @@ export default function AEPWizard() {
           <section className="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-800 text-white rounded-3xl p-6 shadow-xl">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <div className="text-sm opacity-90">Event Mode</div>
-                <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight">Let’s Win AEP</h2>
+                <div className="text-sm opacity-90">{t('eventMode') || 'Event Mode'}</div>
+                <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight">{t('letsWinAEP') || "Let's Win AEP"}</h2>
                 <p className="mt-1 text-blue-100">
-                  Focused outreach. Faster booking. Clear priorities. Make every touch count.
+                  {t('focusedOutreach') || 'Focused outreach + automation = more enrollments'}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <button className="bg-white text-blue-800 px-4 py-2 rounded-xl font-bold shadow hover:scale-105 transition">
                   <Send className="inline -mt-1 mr-1" size={16} />
-                  Send Pre-AEP Blast
+                  {t('sendPreAepBlast') || 'Send Pre-AEP Blast'}
                 </button>
                 <button className="bg-white/10 border border-white/30 text-white px-4 py-2 rounded-xl font-bold hover:bg-white/20 transition">
                   <Calendar className="inline -mt-1 mr-1" size={16} />
-                  Open Booking
+                  {t('openBooking') || 'Open Booking'}
                 </button>
                 <button className="bg-white/10 border border-white/30 text-white px-4 py-2 rounded-xl font-bold hover:bg-white/20 transition">
                   <ListChecks className="inline -mt-1 mr-1" size={16} />
-                  Create Call List
+                  {t('createCallList') || 'Create Call List'}
                 </button>
               </div>
             </div>
             {/* Progress tiles */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              <ProgressTile label="Pre-AEP Outreach" value={72} />
-              <ProgressTile label="Booking Goal" value={54} />
-              <ProgressTile label="Risk Coverage" value={63} />
-              <ProgressTile label="Replies Handled" value={39} />
+              <ProgressTile label={t('preAepOutreach') || 'Pre-AEP Outreach'} value={72} />
+              <ProgressTile label={t('bookingGoal') || 'Booking Goal'} value={54} />
+              <ProgressTile label={t('riskCoverage') || 'Risk Coverage'} value={63} />
+              <ProgressTile label={t('repliesHandled') || 'Replies Handled'} value={39} />
             </div>
           </section>
 
           {/* AUTOMATIONS */}
           <section className="bg-white rounded-3xl shadow p-6 border border-blue-100">
             <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-              <Zap className="text-blue-700" /> Outreach Automations
+              <Zap className="text-blue-700" /> {t('outreachAutomations') || 'Outreach Automations'}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[
-                ["preAEP60", "Pre-AEP: 60 days"],
-                ["preAEP30", "Pre-AEP: 30 days"],
-                ["preAEP14", "Pre-AEP: 14 days"],
-                ["preAEP7", "Pre-AEP: 7 days"],
-                ["preAEP3", "Pre-AEP: 3 days"],
-                ["preAEP1", "Pre-AEP: 1 day"],
-                ["anocExplainer", "ANOC Explainer"],
-                ["bookingNudges", "Booking Nudges"],
+                ["preAEP60", t('preAep60Days') || "60-Day Pre-AEP Email"],
+                ["preAEP30", t('preAep30Days') || "30-Day Pre-AEP Email"],
+                ["preAEP14", t('preAep14Days') || "14-Day Pre-AEP Email"],
+                ["preAEP7", t('preAep7Days') || "7-Day Pre-AEP SMS"],
+                ["preAEP3", t('preAep3Days') || "3-Day Reminder"],
+                ["preAEP1", t('preAep1Day') || "1-Day Final Push"],
+                ["anocExplainer", t('anocExplainer') || "ANOC Explainer"],
+                ["bookingNudges", t('bookingNudges') || "Booking Nudges"],
               ].map(([key, label]) => (
                 <ToggleCard key={key} label={label} on={automations[key]} onClick={() => toggleAuto(key)} />
               ))}
               <ToggleCard
-                label="Voicemail Drop (UI only)"
+                label={t('voicemailDropUi') || 'Voicemail Drop UI'}
                 on={automations.voicemailDropUI}
                 onClick={() => toggleAuto("voicemailDropUI")}
               />
               <ToggleCard
-                label="Require Approval"
+                label={t('requireApproval') || 'Require Approval'}
                 on={automations.requireApproval}
                 onClick={() => toggleAuto("requireApproval")}
               />
@@ -447,14 +497,20 @@ export default function AEPWizard() {
           <section className="bg-white rounded-3xl shadow p-6 border border-blue-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-                <Star className="text-yellow-500" /> Templates
+                <Star className="text-yellow-500" /> {t('templates') || 'Templates'}
               </h3>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setEditingTemplate({ title: '', type: 'email', subject: '', content: '', tags: [] })}
+                  className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700"
+                >
+                  <Plus size={14} className="inline -mt-0.5 mr-1" /> New Template
+                </button>
                 <Filter size={16} className="text-gray-400" />
                 <input
                   type="text"
                   className="rounded-lg border px-2 py-1 text-sm"
-                  placeholder="Search templates..."
+                  placeholder={t('searchTemplatesPlaceholder') || 'Search...'}
                   value={searchTemplate}
                   onChange={(e) => setSearchTemplate(e.target.value)}
                 />
@@ -463,25 +519,26 @@ export default function AEPWizard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {templates
                 .filter(
-                  (t) =>
-                    t.title.toLowerCase().includes(searchTemplate.toLowerCase()) ||
-                    t.tags.join(" ").toLowerCase().includes(searchTemplate.toLowerCase())
+                  (tpl) =>
+                    (tpl.title || '').toLowerCase().includes(searchTemplate.toLowerCase()) ||
+                    (tpl.tags || []).join(" ").toLowerCase().includes(searchTemplate.toLowerCase())
                 )
-                .map((tpl, i) => (
-                  <div key={i} className="p-4 rounded-2xl border hover:border-blue-300 transition bg-blue-50/40">
+                .map((tpl) => (
+                  <div key={tpl.id} className="p-4 rounded-2xl border hover:border-blue-300 transition bg-blue-50/40">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-bold text-gray-900">
                           {tpl.title} <span className="text-xs text-blue-500">({tpl.type})</span>
+                          {tpl.is_system && <span className="text-xs text-gray-400 ml-1">(System)</span>}
                         </div>
                         <div className="flex gap-1 mt-1 flex-wrap">
-                          {tpl.tags.map((tag, j) => (
+                          {(tpl.tags || []).map((tag, j) => (
                             <span key={j} className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
                               {tag}
                             </span>
                           ))}
-                          {tpl.featured && (
-                            <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">Featured</span>
+                          {tpl.is_featured && (
+                            <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">{t('featured') || 'Featured'}</span>
                           )}
                         </div>
                       </div>
@@ -491,15 +548,23 @@ export default function AEPWizard() {
                           onClick={() => handlePreviewTemplate(tpl)}
                         >
                           <EyeIcon size={16} className="inline -mt-0.5 mr-1" />
-                          Preview
+                          {t('preview') || 'Preview'}
                         </button>
                         <button
                           className="text-green-700 hover:underline text-xs"
-                          onClick={() => handleInsertTemplate(tpl)}
+                          onClick={() => handleEditTemplate(tpl)}
                         >
-                          <Plus size={16} className="inline -mt-0.5 mr-1" />
-                          Insert
+                          <Edit2 size={16} className="inline -mt-0.5 mr-1" />
+                          {t('edit') || 'Edit'}
                         </button>
+                        {!tpl.is_system && (
+                          <button
+                            className="text-red-600 hover:underline text-xs"
+                            onClick={() => handleDeleteTemplate(tpl)}
+                          >
+                            <Trash2 size={14} className="inline -mt-0.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -513,66 +578,92 @@ export default function AEPWizard() {
           {/* ACTIVITY */}
           <section className="bg-white rounded-3xl shadow p-6 border border-blue-100">
             <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-              <ListChecks className="text-blue-700" /> Activity Feed
+              <ListChecks className="text-blue-700" /> {t('activityFeed') || 'Activity Feed'}
             </h3>
             <div className="max-h-72 overflow-y-auto divide-y">
-              {activity.map((a, idx) => (
-                <div key={idx} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold text-gray-800">{a.automation}</div>
-                    <div className="text-xs text-gray-500">
-                      {a.time} &bull; {a.type} &bull; {a.to}
+              {activity.length === 0 ? (
+                <p className="text-gray-500 py-4 text-center">No activity yet. Send your first outreach!</p>
+              ) : (
+                activity.map((a, idx) => (
+                  <div key={a.id || idx} className="py-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-gray-800">{a.automation || 'Manual'}</div>
+                      <div className="text-xs text-gray-500">
+                        {formatTime(a.time)} &bull; {a.type} &bull; {a.to}
+                      </div>
+                      {a.subject && a.subject !== "—" && <div className="text-xs text-gray-400">{a.subject}</div>}
                     </div>
-                    {a.subject !== "—" && <div className="text-xs text-gray-400">{a.subject}</div>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {a.status === "delivered" && (
-                      <span className="text-green-600 flex items-center gap-1">
-                        <CheckCircle2 size={16} /> Delivered
-                      </span>
-                    )}
-                    {a.status === "opened" && (
-                      <span className="text-blue-600 flex items-center gap-1">
-                        <Eye size={16} /> Opened
-                      </span>
-                    )}
-                    {a.status === "failed" && (
-                      <>
-                        <span className="text-red-600 flex items-center gap-1">
-                          <XCircle size={16} /> Failed
+                    <div className="flex items-center gap-2">
+                      {(a.status === "delivered" || a.status === "sent") && (
+                        <span className="text-green-600 flex items-center gap-1">
+                          <CheckCircle2 size={16} /> {t('delivered') || 'Delivered'}
                         </span>
-                        <button className="text-blue-700 underline text-xs" onClick={() => handleResend(idx)}>
-                          <RefreshCw size={14} className="inline -mt-0.5 mr-1" />
-                          Resend
-                        </button>
-                        <span className="text-xs text-red-400">{a.error}</span>
-                      </>
-                    )}
+                      )}
+                      {a.status === "opened" && (
+                        <span className="text-blue-600 flex items-center gap-1">
+                          <Eye size={16} /> {t('opened') || 'Opened'}
+                        </span>
+                      )}
+                      {a.status === "queued" && (
+                        <span className="text-yellow-600 flex items-center gap-1">
+                          <RefreshCw size={16} /> Queued
+                        </span>
+                      )}
+                      {a.status === "failed" && (
+                        <>
+                          <span className="text-red-600 flex items-center gap-1">
+                            <XCircle size={16} /> {t('failed') || 'Failed'}
+                          </span>
+                          <button className="text-blue-700 underline text-xs" onClick={() => handleResend(idx)}>
+                            <RefreshCw size={14} className="inline -mt-0.5 mr-1" />
+                            {t('resend') || 'Resend'}
+                          </button>
+                          {a.error && <span className="text-xs text-red-400">{a.error}</span>}
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <button
               className="mt-3 text-xs text-blue-900 flex items-center gap-1 hover:underline"
               onClick={handleExportCSV}
             >
-              <Download size={16} /> Export (CSV)
+              <Download size={16} /> {t('exportCsv') || 'Export CSV'}
             </button>
           </section>
 
           {/* ANALYTICS */}
           <section className="bg-white rounded-3xl shadow p-6 border border-blue-100">
             <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-              <Eye className="text-blue-700" /> Analytics
+              <Eye className="text-blue-700" /> {t('analytics') || 'Analytics'}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {analytics.map((a, i) => (
-                <div key={i} className="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow flex flex-col items-center justify-center p-4 border">
-                  <div className="mb-1">{a.icon}</div>
-                  <div className="text-xl font-black text-blue-800">{a.value}</div>
-                  <div className="text-xs text-gray-600">{a.label}</div>
-                </div>
-              ))}
+              {(analytics.length > 0 ? analytics : [
+                { labelKey: "automationsSent", value: 0 },
+                { labelKey: "openRate", value: "0%" },
+                { labelKey: "clickRate", value: "0%" },
+                { labelKey: "replyRate", value: "0%" },
+                { labelKey: "bounces", value: 0 },
+                { labelKey: "failedSends", value: 0 },
+              ]).map((a, i) => {
+                const icons = {
+                  automationsSent: <Send className="w-6 h-6" />,
+                  openRate: <Eye className="w-6 h-6" />,
+                  clickRate: <ArrowUpRight className="w-6 h-6" />,
+                  replyRate: <MessageSquare className="w-6 h-6" />,
+                  bounces: <AlertCircle className="w-6 h-6" />,
+                  failedSends: <XCircle className="w-6 h-6" />,
+                };
+                return (
+                  <div key={i} className="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow flex flex-col items-center justify-center p-4 border">
+                    <div className="mb-1">{icons[a.labelKey] || <Send className="w-6 h-6" />}</div>
+                    <div className="text-xl font-black text-blue-800">{a.value}</div>
+                    <div className="text-xs text-gray-600">{t(a.labelKey) || a.labelKey}</div>
+                  </div>
+                );
+              })}
             </div>
           </section>
 
@@ -581,7 +672,7 @@ export default function AEPWizard() {
             {aiOpen ? (
               <div className="w-full bg-white shadow-2xl rounded-2xl border border-blue-200 flex flex-col">
                 <div className="bg-blue-900 text-white px-4 py-2 rounded-t-2xl flex justify-between items-center">
-                  <span className="font-semibold">AEP Wizard Helper</span>
+                  <span className="font-semibold">{t('aepWizardHelper') || 'AEP Wizard Helper'}</span>
                   <button className="text-white text-xl" onClick={() => setAiOpen(false)} title="Close">
                     ×
                   </button>
@@ -601,13 +692,13 @@ export default function AEPWizard() {
                 <form className="border-t flex items-center gap-2 p-2" onSubmit={handleAiSend}>
                   <input
                     className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                    placeholder="Ask me to draft, optimize, or summarize…"
+                    placeholder={t('askMeToDraft') || 'Ask me to draft a message...'}
                     value={aiInput}
                     onChange={(e) => setAiInput(e.target.value)}
                     autoFocus
                   />
                   <button className="bg-blue-700 text-white px-3 py-2 rounded-lg hover:bg-blue-900" type="submit">
-                    Send
+                    {t('send') || 'Send'}
                   </button>
                 </form>
               </div>
@@ -618,7 +709,7 @@ export default function AEPWizard() {
                 title="Open AEP Wizard Helper"
               >
                 <MessageSquare className="w-5 h-5" />
-                <span className="font-bold">Open AI Helper</span>
+                <span className="font-bold">{t('openAiHelper') || 'AI Helper'}</span>
               </button>
             )}
           </div>
@@ -630,14 +721,14 @@ export default function AEPWizard() {
         <section className="bg-white rounded-3xl shadow p-6 border border-blue-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-              <Calendar className="text-blue-700" /> Countdown List
+              <Calendar className="text-blue-700" /> {t('countdownList') || 'Countdown List'}
             </h3>
             <button
               onClick={openAdd}
               className="bg-blue-800 text-white px-4 py-2 rounded-xl font-bold shadow hover:bg-blue-900"
             >
               <UserPlus className="inline -mt-1 mr-1" size={16} />
-              Add Contact
+              {t('addContact') || 'Add Contact'}
             </button>
           </div>
 
@@ -645,14 +736,14 @@ export default function AEPWizard() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
-                  <th className="py-2 pr-4">Name</th>
-                  <th className="py-2 pr-4">Phone</th>
-                  <th className="py-2 pr-4">Email</th>
-                  <th className="py-2 pr-4">ZIP</th>
-                  <th className="py-2 pr-4">Status</th>
-                  <th className="py-2 pr-4">Newsletter</th>
-                  <th className="py-2 pr-4">Plan</th>
-                  <th className="py-2 pr-4">Actions</th>
+                  <th className="py-2 pr-4">{t('name') || 'Name'}</th>
+                  <th className="py-2 pr-4">{t('phone') || 'Phone'}</th>
+                  <th className="py-2 pr-4">{t('email') || 'Email'}</th>
+                  <th className="py-2 pr-4">{t('zip') || 'ZIP'}</th>
+                  <th className="py-2 pr-4">{t('status') || 'Status'}</th>
+                  <th className="py-2 pr-4">{t('monthlyNewsletterLabel') || 'Newsletter'}</th>
+                  <th className="py-2 pr-4">{t('outreachPlan') || 'Outreach Plan'}</th>
+                  <th className="py-2 pr-4">{t('actions') || 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -681,12 +772,12 @@ export default function AEPWizard() {
                         {c.status}
                       </span>
                     </td>
-                    <td className="py-2 pr-4">{c.newsletter ? "Yes" : "No"}</td>
+                    <td className="py-2 pr-4">{c.newsletter ? (t('yesLabel') || 'Yes') : (t('noLabel') || 'No')}</td>
                     <td className="py-2 pr-4">
                       <div className="text-xs text-gray-600">
-                        2mo {c.outreachPlan.twoMonths ? "•" : "×"} / 1mo {c.outreachPlan.oneMonth ? "•" : "×"} / 2w{" "}
-                        {c.outreachPlan.twoWeeks ? "•" : "×"} / 1w {c.outreachPlan.oneWeek ? "•" : "×"} / Live{" "}
-                        {c.outreachPlan.aepLive ? "•" : "×"}
+                        2mo {c.outreachPlan?.twoMonths ? "•" : "×"} / 1mo {c.outreachPlan?.oneMonth ? "•" : "×"} / 2w{" "}
+                        {c.outreachPlan?.twoWeeks ? "•" : "×"} / 1w {c.outreachPlan?.oneWeek ? "•" : "×"} / Live{" "}
+                        {c.outreachPlan?.aepLive ? "•" : "×"}
                       </div>
                     </td>
                     <td className="py-2 pr-4">
@@ -694,16 +785,23 @@ export default function AEPWizard() {
                         <button
                           className="text-blue-700 text-xs underline"
                           onClick={() => sendNextDrip(c)}
-                          title="Send next drip (demo)"
+                          title="Send next drip"
                         >
-                          Send Drip
+                          {t('sendDrip') || 'Send Drip'}
                         </button>
                         <button
                           className="text-gray-700 text-xs underline"
                           onClick={() => editContact(c)}
                           title="Edit"
                         >
-                          Edit
+                          {t('edit') || 'Edit'}
+                        </button>
+                        <button
+                          className="text-red-600 text-xs underline"
+                          onClick={() => handleDeleteContact(c)}
+                          title="Delete"
+                        >
+                          Delete
                         </button>
                       </div>
                     </td>
@@ -712,7 +810,7 @@ export default function AEPWizard() {
                 {contacts.length === 0 && (
                   <tr>
                     <td className="py-6 text-gray-500" colSpan={8}>
-                      No contacts yet. Click <b>Add Contact</b> to start your Countdown List.
+                      {t('noContactsYet') || 'No contacts yet. Add prospects who need to wait for AEP!'}
                     </td>
                   </tr>
                 )}
@@ -720,40 +818,40 @@ export default function AEPWizard() {
             </table>
           </div>
 
-          {/* Add/Edit modal */}
+          {/* Add/Edit contact modal */}
           {addOpen && (
-            <Modal onClose={() => setAddOpen(false)} title={editing ? "Edit Countdown Contact" : "Add Countdown Contact"}>
+            <Modal onClose={() => setAddOpen(false)} title={editing ? (t('editCountdownContact') || 'Edit Contact') : (t('addCountdownContact') || 'Add Contact')}>
               <form onSubmit={saveContact} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Input name="firstName" label="First Name" defaultValue={editing?.firstName} required />
-                  <Input name="lastName" label="Last Name" defaultValue={editing?.lastName} required />
-                  <Input name="phone" label="Phone" defaultValue={editing?.phone} />
-                  <Input name="email" label="Email" defaultValue={editing?.email} />
-                  <Input name="zip" label="ZIP" defaultValue={editing?.zip} />
-                  <Input name="county" label="County" defaultValue={editing?.county} />
-                  <Input name="dob" type="date" label="DOB" defaultValue={editing?.dob} />
+                  <Input name="firstName" label={t('firstName') || 'First Name'} defaultValue={editing?.firstName} required />
+                  <Input name="lastName" label={t('lastName') || 'Last Name'} defaultValue={editing?.lastName} required />
+                  <Input name="phone" label={t('phone') || 'Phone'} defaultValue={editing?.phone} />
+                  <Input name="email" label={t('email') || 'Email'} defaultValue={editing?.email} />
+                  <Input name="zip" label={t('zip') || 'ZIP'} defaultValue={editing?.zip} />
+                  <Input name="county" label={t('county') || 'County'} defaultValue={editing?.county} />
+                  <Input name="dob" type="date" label={t('dob') || 'Date of Birth'} defaultValue={editing?.dob} />
                   <Select
                     name="language"
-                    label="Language"
+                    label={t('languageLabel') || 'Language'}
                     defaultValue={editing?.language ?? "English"}
                     options={["English", "Spanish", "Other"]}
                   />
                   <Select
                     name="source"
-                    label="Source"
+                    label={t('sourceLabel') || 'Source'}
                     defaultValue={editing?.source ?? "Other"}
                     options={["Event", "Referral", "Inbound", "Other"]}
                   />
                   <Select
                     name="status"
-                    label="Status"
+                    label={t('statusLabel') || 'Status'}
                     defaultValue={editing?.status ?? "New"}
                     options={["New", "Warm", "Scheduled", "Enrolled", "Not Interested"]}
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold text-gray-800">Notes</label>
+                  <label className="text-sm font-semibold text-gray-800">{t('notes') || 'Notes'}</label>
                   <textarea
                     className="w-full border rounded-lg p-2 mt-1"
                     name="notes"
@@ -763,34 +861,35 @@ export default function AEPWizard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Checkbox name="ptc" label="Permission to Contact" defaultChecked={!!editing?.permissionToContact} />
-                  <Checkbox name="newsletter" label="Monthly Newsletter" defaultChecked={!!editing?.newsletter} />
+                  <Checkbox name="ptc" label={t('permissionToContact') || 'Permission to Contact'} defaultChecked={!!editing?.permissionToContact} />
+                  <Checkbox name="newsletter" label={t('monthlyNewsletterLabel') || 'Monthly Newsletter'} defaultChecked={!!editing?.newsletter} />
                 </div>
 
                 <div>
-                  <div className="text-sm font-semibold text-gray-800 mb-1">Outreach Plan</div>
+                  <div className="text-sm font-semibold text-gray-800 mb-1">{t('outreachPlan') || 'Outreach Plan'}</div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    <Checkbox name="twoMonths" label="2 Months" defaultChecked={editing?.outreachPlan?.twoMonths ?? true} />
-                    <Checkbox name="oneMonth" label="1 Month" defaultChecked={editing?.outreachPlan?.oneMonth ?? true} />
-                    <Checkbox name="twoWeeks" label="2 Weeks" defaultChecked={editing?.outreachPlan?.twoWeeks ?? true} />
-                    <Checkbox name="oneWeek" label="1 Week" defaultChecked={editing?.outreachPlan?.oneWeek ?? true} />
-                    <Checkbox name="aepLive" label="AEP Live" defaultChecked={editing?.outreachPlan?.aepLive ?? true} />
+                    <Checkbox name="twoMonths" label={t('twoMonths') || '60 Days'} defaultChecked={editing?.outreachPlan?.twoMonths ?? true} />
+                    <Checkbox name="oneMonth" label={t('oneMonth') || '30 Days'} defaultChecked={editing?.outreachPlan?.oneMonth ?? true} />
+                    <Checkbox name="twoWeeks" label={t('twoWeeks') || '14 Days'} defaultChecked={editing?.outreachPlan?.twoWeeks ?? true} />
+                    <Checkbox name="oneWeek" label={t('oneWeek') || '7 Days'} defaultChecked={editing?.outreachPlan?.oneWeek ?? true} />
+                    <Checkbox name="aepLive" label={t('aepLive') || 'AEP Live'} defaultChecked={editing?.outreachPlan?.aepLive ?? true} />
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="bg-blue-800 text-white px-5 py-2 rounded-xl font-bold shadow hover:bg-blue-900"
+                    className="bg-blue-800 text-white px-5 py-2 rounded-xl font-bold shadow hover:bg-blue-900 disabled:opacity-50"
+                    disabled={saving}
                   >
-                    {editing ? "Save Changes" : "Add Contact"}
+                    {saving ? 'Saving...' : (editing ? (t('saveChanges') || 'Save Changes') : (t('addContact') || 'Add Contact'))}
                   </button>
                   <button
                     type="button"
                     onClick={() => setAddOpen(false)}
                     className="bg-gray-100 text-gray-700 px-5 py-2 rounded-xl hover:bg-gray-200"
                   >
-                    Cancel
+                    {t('cancel') || 'Cancel'}
                   </button>
                 </div>
               </form>
@@ -805,10 +904,10 @@ export default function AEPWizard() {
           <pre className="bg-blue-50 rounded p-4 whitespace-pre-wrap mb-4 text-gray-900 text-sm">
             {previewTemplate.content}
           </pre>
-          <div className="text-sm font-semibold mb-1">Personalization Example</div>
+          <div className="text-sm font-semibold mb-1">{t('personalizationExample') || 'With Sample Data'}:</div>
           <pre className="bg-blue-100 rounded p-4 whitespace-pre-wrap text-blue-800 text-sm">
-            {MERGE_TAGS.reduce(
-              (acc, t) => acc.replaceAll(t.tag, t.sample),
+            {mergeTags.reduce(
+              (acc, tag) => acc.replace(new RegExp(tag.tag.replace(/[{}]/g, '\\$&'), 'g'), tag.description || tag.key),
               previewTemplate.content
             )}
           </pre>
@@ -817,25 +916,120 @@ export default function AEPWizard() {
               className="bg-blue-800 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-blue-900"
               onClick={() => handleTestSend(previewTemplate.content)}
             >
-              Test Send (demo)
+              {t('testSend') || 'Test Send'} (Preview)
             </button>
             <button
               className="bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-green-800"
               onClick={() => handleInsertTemplate(previewTemplate)}
             >
-              Insert
+              {t('insert') || 'Copy to Clipboard'}
             </button>
           </div>
           <div className="mt-4">
-            <div className="text-xs text-gray-600 mb-2">Merge Tags:</div>
+            <div className="text-xs text-gray-600 mb-2">{t('mergeTags') || 'Merge Tags'}:</div>
             <div className="flex flex-wrap gap-2">
-              {MERGE_TAGS.map((t, i) => (
+              {mergeTags.map((tag, i) => (
                 <span key={i} className="bg-blue-100 px-3 py-1 rounded-full font-mono text-xs text-blue-900">
-                  {t.tag} <span className="text-gray-500">({t.label})</span>
+                  {tag.tag} <span className="text-gray-500">({tag.description || tag.key})</span>
                 </span>
               ))}
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* TEMPLATE EDIT MODAL */}
+      {editingTemplate && (
+        <Modal onClose={() => setEditingTemplate(null)} title={editingTemplate.id ? 'Edit Template' : 'New Template'}>
+          <form onSubmit={handleSaveTemplate} className="space-y-4">
+            {editingTemplate.is_system && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-2 rounded-lg text-sm">
+                This is a system template. Editing will create your personal copy.
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-semibold text-gray-800">Title *</label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg p-2 mt-1"
+                  value={editingTemplate.title}
+                  onChange={e => setEditingTemplate(t => ({ ...t, title: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-800">Type *</label>
+                <select
+                  className="w-full border rounded-lg p-2 mt-1"
+                  value={editingTemplate.type}
+                  onChange={e => setEditingTemplate(t => ({ ...t, type: e.target.value }))}
+                >
+                  <option value="email">Email</option>
+                  <option value="sms">SMS</option>
+                </select>
+              </div>
+            </div>
+
+            {editingTemplate.type === 'email' && (
+              <div>
+                <label className="text-sm font-semibold text-gray-800">Subject Line</label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg p-2 mt-1"
+                  value={editingTemplate.subject}
+                  onChange={e => setEditingTemplate(t => ({ ...t, subject: e.target.value }))}
+                  placeholder="e.g., AEP is coming — let's prepare!"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-semibold text-gray-800">Content *</label>
+              <textarea
+                className="w-full border rounded-lg p-2 mt-1 font-mono text-sm"
+                value={editingTemplate.content}
+                onChange={e => setEditingTemplate(t => ({ ...t, content: e.target.value }))}
+                rows={8}
+                required
+                placeholder={editingTemplate.type === 'sms'
+                  ? "Hi {ClientName}, AEP starts Oct 15..."
+                  : "Hi {ClientName},\n\nThe Medicare Annual Enrollment Period starts on October 15..."}
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                Available merge tags: {mergeTags.map(t => t.tag).join(', ')}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-gray-800">Tags (comma separated)</label>
+              <input
+                type="text"
+                className="w-full border rounded-lg p-2 mt-1"
+                value={(editingTemplate.tags || []).join(', ')}
+                onChange={e => setEditingTemplate(t => ({ ...t, tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
+                placeholder="Pre-AEP, Email, Reminder"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="bg-blue-800 text-white px-5 py-2 rounded-xl font-bold shadow hover:bg-blue-900 disabled:opacity-50 flex items-center gap-2"
+                disabled={saving}
+              >
+                <Save size={16} />
+                {saving ? 'Saving...' : (editingTemplate.is_system ? 'Save as Copy' : 'Save Template')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingTemplate(null)}
+                className="bg-gray-100 text-gray-700 px-5 py-2 rounded-xl hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>
@@ -844,21 +1038,21 @@ export default function AEPWizard() {
 
 /* -------------------- small components -------------------- */
 
-function SplashCountdown({ remaining, onSkip }) {
+function SplashCountdown({ remaining, onSkip, t }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white">
       <div className="text-center">
         <div className="inline-flex items-center gap-3 mb-3">
           <Zap className="w-8 h-8 text-yellow-300 animate-pulse" />
-          <span className="text-2xl font-extrabold tracking-tight">AEP Wizard</span>
+          <span className="text-2xl font-extrabold tracking-tight">{t('aepWizardTitle') || 'AEP Wizard'}</span>
         </div>
-        <div className="text-sm text-blue-100">Loading the playbook…</div>
+        <div className="text-sm text-blue-100">{t('loadingPlaybook') || 'Loading your AEP playbook...'}</div>
         <div className="mt-6 grid grid-cols-4 gap-3">
           {[
-            ["Days", remaining.d],
-            ["Hours", remaining.h],
-            ["Minutes", remaining.m],
-            ["Seconds", remaining.s],
+            ["d", remaining.d],
+            ["h", remaining.h],
+            ["m", remaining.m],
+            ["s", remaining.s],
           ].map(([label, val]) => (
             <div key={label} className="bg-white/10 rounded-2xl px-4 py-3 backdrop-blur shadow">
               <div className="text-3xl font-black">{String(val).padStart(2, "0")}</div>
@@ -870,7 +1064,7 @@ function SplashCountdown({ remaining, onSkip }) {
           onClick={onSkip}
           className="mt-8 bg-white text-blue-900 font-bold px-5 py-2 rounded-2xl shadow hover:scale-105 transition"
         >
-          Enter Wizard
+          {t('enterWizard') || 'Enter Wizard'}
         </button>
       </div>
     </div>
@@ -914,11 +1108,11 @@ function ToggleCard({ label, on, onClick }) {
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl relative">
-        <button className="absolute top-3 right-4 text-gray-400 text-2xl" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl relative max-h-[90vh] flex flex-col">
+        <button className="absolute top-3 right-4 text-gray-400 text-2xl z-10" onClick={onClose}>
           &times;
         </button>
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           {title && <h2 className="text-xl font-bold text-blue-900 mb-4">{title}</h2>}
           {children}
         </div>

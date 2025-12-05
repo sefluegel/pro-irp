@@ -1,401 +1,502 @@
-// frontend/src/components/Clients.jsx
-import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+// src/pages/Clients.jsx
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
-  Plus, UploadCloud, Download, Search, Filter, MoreHorizontal,
-  Edit2, Mail, MessageCircle, Phone, Trash2, SlidersHorizontal, X
-} from "lucide-react";
-import { fetchClients, addClient } from "../api";
+  getClients,
+  addClient,
+  updateClient,
+  deleteClient,
+  getExportCsvUrl,
+  getImportHistory,
+  reverseImport,
+} from "../api";
+import ClientFormFull from "../components/ClientFormFull";
+import { History, RotateCcw, Clock, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 
-// color helpers (same as before)
-const RISK_COLORS = {
-  High: "bg-red-200 text-red-800",
-  Medium: "bg-yellow-200 text-yellow-800",
-  Low: "bg-green-200 text-green-800",
-};
-const TAG_COLORS = {
-  MAPD: "bg-blue-100 text-blue-800",
-  PDP: "bg-yellow-100 text-yellow-800",
-  "D-SNP": "bg-purple-100 text-purple-800",
-  "Hot Lead": "bg-pink-100 text-pink-800",
-};
-const STATUS_COLORS = {
-  Active: "bg-green-100 text-green-800",
-  Prospect: "bg-yellow-100 text-yellow-800",
-  Inactive: "bg-gray-100 text-gray-700",
-};
-
-const columnDefs = [
-  { key: "select", label: "", width: "w-6" },
-  { key: "initials", label: "", width: "w-10" },
-  { key: "name", label: "Name", sortable: true },
-  { key: "phone", label: "Phone" },
-  { key: "email", label: "Email" },
-  { key: "created", label: "Created", sortable: true },
-  { key: "lastActivity", label: "Last Activity", sortable: true },
-  { key: "tags", label: "Tags" },
-  { key: "risk", label: "Risk" },
-  { key: "status", label: "Status" },
-  { key: "owner", label: "Owner" },
-  { key: "actions", label: "", width: "w-8" },
-];
-
-// map an API client into a table row
-function mapApiToRow(c) {
-  const name = `${c.firstName || ""} ${c.lastName || ""}`.trim();
-  const initials = (c.firstName?.[0] || "?") + (c.lastName?.[0] || "");
-  return {
-    id: c.id,
-    name,
-    initials: initials.toUpperCase(),
-    phone: c.phone || "—",
-    email: c.email || "—",
-    created: new Date(c.createdAt || Date.now()).toLocaleDateString(),
-    lastActivity: "—",
-    tags: [],
-    risk: "Medium",
-    status: "Active",
-    owner: "You",
-    unread: false,
-  };
+/* ---------- Small modal + confirm that match existing tone ---------- */
+function Modal({ title, children, onClose, width = "max-w-2xl" }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className={`relative w-full ${width} bg-white rounded-2xl shadow-xl ring-1 ring-black/5`}>
+        <div className="h-2 bg-amber-400 rounded-t-2xl" />
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+            <button className="text-slate-500 hover:text-slate-700" onClick={onClose}>
+              ✕
+            </button>
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+function Confirm({ text, onConfirm, onCancel, t, loading = false }) {
+  return (
+    <Modal title={t('pleaseConfirm')} onClose={loading ? undefined : onCancel}>
+      <p className="text-slate-600 mb-4">{text}</p>
+      <div className="flex justify-end gap-2">
+        <button
+          className="px-3 py-2 text-sm rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+          onClick={onCancel}
+          disabled={loading}
+        >
+          {t('cancel')}
+        </button>
+        <button
+          className="px-3 py-2 text-sm rounded bg-red-600 text-white hover:opacity-95 disabled:opacity-50"
+          onClick={onConfirm}
+          disabled={loading}
+        >
+          {loading ? t('deleting') || 'Deleting...' : t('delete')}
+        </button>
+      </div>
+    </Modal>
+  );
 }
 
-const Clients = () => {
-  // table state
-  const [clients, setClients] = useState([]);         // will be loaded from API
-  const [selected, setSelected] = useState([]);
-  const [search, setSearch] = useState("");
-  const [columns, setColumns] = useState(columnDefs.map(c => c.key));
-
-  // ui state
-  const [showImport, setShowImport] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
+/* ---------- Page ---------- */
+export default function Clients() {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const fileInput = useRef();
 
-  // add-client modal state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
+  // UI state that mirrors your existing layout
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [confirmIds, setConfirmIds] = useState(null); // null or array of IDs to delete
+  const [deleting, setDeleting] = useState(false);
+  const [selected, setSelected] = useState({}); // id -> bool
 
-  // load from API once
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await fetchClients();          // [{id, firstName, ...}]
-        setClients(data.map(mapApiToRow));
-      } catch (e) {
-        setErr(e.message || "Failed to load clients");
-      }
-    })();
-  }, []);
+  // Recent imports state
+  const [importHistory, setImportHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [reversingId, setReversingId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyMsg, setHistoryMsg] = useState("");
 
-  const handleSelectAll = e =>
-    setSelected(e.target.checked ? clients.map(c => c.id) : []);
-  const handleSelect = id =>
-    setSelected(sel => (sel.includes(id) ? sel.filter(i => i !== id) : [...sel, id]));
-  const handleBulkDelete = () => {
-    setClients(cs => cs.filter(c => !selected.includes(c.id)));
-    setSelected([]);
-  };
-
-  const filteredClients = clients.filter(c =>
-    search === "" ||
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // save from modal -> POST /clients
-  async function saveNewClient(e) {
-    e.preventDefault();
+  async function load() {
     setErr("");
-    if (!firstName.trim() || !lastName.trim()) {
-      setErr("First and last name are required.");
-      return;
-    }
-    setSaving(true);
     try {
-      const created = await addClient({ firstName, lastName, email, phone, notes });
-      // show the new row at the top
-      setClients(prev => [mapApiToRow(created), ...prev]);
-      // clear + close modal
-      setFirstName(""); setLastName(""); setEmail(""); setPhone(""); setNotes("");
-      setShowAdd(false);
+      setLoading(true);
+      const data = await getClients();
+      // newest first
+      data.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      setRows(data);
     } catch (e) {
-      setErr(e.message || "Failed to add client");
+      setErr("Failed to load clients");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   }
 
+  useEffect(() => { load(); }, []);
+
+  // Load import history
+  const loadImportHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await getImportHistory();
+      setImportHistory(data);
+    } catch (e) {
+      console.error('[IMPORT] Failed to load import history:', e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
+  // Load history when showHistory is toggled on
+  useEffect(() => {
+    if (showHistory && importHistory.length === 0) {
+      loadImportHistory();
+    }
+  }, [showHistory, loadImportHistory, importHistory.length]);
+
+  // Handle reversing an import
+  const handleReverseImport = async (importId) => {
+    if (!window.confirm('Are you sure you want to reverse this import? This will permanently delete all clients that were added in this batch.')) {
+      return;
+    }
+    setReversingId(importId);
+    try {
+      const result = await reverseImport(importId);
+      setHistoryMsg(`Reversed import: ${result.deletedCount} clients removed`);
+      await loadImportHistory();
+      await load(); // Refresh the client list
+    } catch (e) {
+      setErr('Failed to reverse import: ' + (e?.message || 'Unknown error'));
+    } finally {
+      setReversingId(null);
+    }
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => {
+      const hay = `${r.firstName} ${r.lastName} ${r.email} ${r.phone} ${r.carrier} ${r.plan}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [rows, search]);
+
+  const selectedIds = useMemo(() => Object.keys(selected).filter((id) => selected[id]), [selected]);
+
   return (
-    <div className="p-6 max-w-[1300px] mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-[#172A3A]">Clients</h1>
-          <p className="text-gray-500">All your clients, prospects & contacts.</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-[#FFB800] text-[#172A3A] px-4 py-2 rounded-xl font-bold hover:bg-yellow-400 transition"
-          >
-            <Plus size={18} /> Add Client
-          </button>
-          <button
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 bg-white border px-4 py-2 rounded-xl shadow hover:bg-gray-50 transition"
-          >
-            <UploadCloud size={18} /> Import
-          </button>
-          <button
-            onClick={() => alert("Exporting CSV...")}
-            className="flex items-center gap-2 bg-white border px-4 py-2 rounded-xl shadow hover:bg-gray-50 transition"
-          >
-            <Download size={18} /> Export
-          </button>
-        </div>
-      </div>
-
-      {/* Toolbar */}
+    <div className="px-6 py-6">
+      {/* Header like your screenshot */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
-          <button
-            disabled={!selected.length}
-            onClick={handleBulkDelete}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-white border shadow-sm hover:bg-gray-50 text-xs"
-          >
-            <Trash2 size={14} /> Delete
-          </button>
-          <button
-            disabled={!selected.length}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-white border shadow-sm hover:bg-gray-50 text-xs"
-          >
-            <Mail size={14} /> Email
-          </button>
-          <button
-            disabled={!selected.length}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-white border shadow-sm hover:bg-gray-50 text-xs"
-          >
-            <MessageCircle size={14} /> SMS
-          </button>
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900">{t('clients')}</h1>
+          <p className="text-slate-600">{t('allYourClients')}</p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setColumns(cols =>
-              cols.includes("actions") ? columnDefs.map(c => c.key) : cols)}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-white border shadow-sm hover:bg-gray-50 text-xs"
+            className="px-4 py-2 bg-[#FFB800] text-[#172A3A] font-semibold rounded-lg shadow hover:opacity-90"
+            onClick={() => { setEditRow(null); setShowForm(true); }}
           >
-            <SlidersHorizontal size={14} /> Columns
+            + {t('addClient')}
           </button>
-          <div className="relative">
-            <Search size={16} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search"
-              className="pl-8 pr-2 py-1 rounded border shadow-sm text-xs"
-            />
-          </div>
+
           <button
-            onClick={() => alert("Filters coming soon")}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-white border shadow-sm hover:bg-gray-50 text-xs"
+            className="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-2"
+            onClick={() => nav("/clients/import")}
+            title={t('import')}
           >
-            <Filter size={14} /> More Filters
+            <span role="img" aria-label="import">📥</span> {t('import')}
+          </button>
+
+          <a
+            className="px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-2"
+            href={getExportCsvUrl()}
+            title={t('export')}
+          >
+            <span role="img" aria-label="export">📤</span> {t('export')}
+          </a>
+
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 px-2 py-2 rounded-lg border border-blue-200 hover:bg-blue-50"
+          >
+            <History size={14} />
+            {showHistory ? 'Hide' : 'View'} History
+            {showHistory ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
         </div>
       </div>
 
-      {/* Error */}
-      {err && (
-        <div className="mb-4 p-3 border rounded bg-red-50 text-red-700">
-          {err}
+      {/* Success message for import reversal */}
+      {historyMsg && (
+        <div className="mb-4 bg-green-50 text-green-700 text-sm px-3 py-2 rounded border border-green-200 flex items-center justify-between">
+          <span>{historyMsg}</span>
+          <button onClick={() => setHistoryMsg("")} className="text-green-500 hover:text-green-700">✕</button>
         </div>
       )}
 
+      {/* Recent Imports Section - Collapsible panel (triggered by button under Import) */}
+      {showHistory && (
+        <div className="mb-4 bg-white rounded-xl shadow-sm ring-1 ring-black/5 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+              <History size={16} className="text-blue-500" />
+              Recent Bulk Imports
+            </h3>
+            <button
+              onClick={loadImportHistory}
+              disabled={loadingHistory}
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              {loadingHistory ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+              Refresh
+            </button>
+          </div>
+
+          {loadingHistory ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+            </div>
+          ) : importHistory.length === 0 ? (
+            <div className="text-center py-6 text-slate-500">
+              <Clock size={24} className="mx-auto mb-2 text-slate-300" />
+              <p className="text-sm">No import history found</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {importHistory.map((imp) => {
+                const isReversed = imp.status === 'reversed';
+                const date = new Date(imp.created_at);
+                const formattedDate = date.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit'
+                });
+
+                return (
+                  <div
+                    key={imp.id}
+                    className={`p-3 rounded-lg border ${
+                      isReversed
+                        ? 'bg-gray-50 border-gray-200'
+                        : 'bg-white border-gray-200 hover:border-blue-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-slate-800 text-sm">
+                            {imp.filename || 'Unnamed Import'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            isReversed
+                              ? 'bg-gray-200 text-gray-600'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {imp.status}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-2">
+                          <span className="flex items-center gap-1">
+                            <Clock size={12} />
+                            {formattedDate}
+                          </span>
+                          <span>•</span>
+                          <span className="text-green-600">{imp.created_count} added</span>
+                          {imp.skipped_count > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-yellow-600">{imp.skipped_count} skipped</span>
+                            </>
+                          )}
+                        </div>
+                        {isReversed && imp.reversed_at && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Reversed: {imp.reversed_count} clients removed
+                          </div>
+                        )}
+                      </div>
+
+                      {!isReversed && (
+                        <button
+                          onClick={() => handleReverseImport(imp.id)}
+                          disabled={reversingId === imp.id}
+                          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-red-50 text-red-600 hover:bg-red-100 transition border border-red-200 disabled:opacity-50"
+                        >
+                          {reversingId === imp.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <RotateCcw size={12} />
+                          )}
+                          Undo
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action row: Delete / Email / SMS + Columns / Search / More Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <button
+            className="px-3 py-2 rounded border border-slate-200 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-50"
+            disabled={selectedIds.length === 0}
+            onClick={() => setConfirmIds(selectedIds)}
+          >
+            🗑️ {t('delete')} {selectedIds.length > 0 && `(${selectedIds.length})`}
+          </button>
+          <button
+            className="px-3 py-2 rounded border border-slate-200 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-50"
+            disabled={selectedIds.length === 0}
+          >
+            ✉️ {t('email')}
+          </button>
+          <button
+            className="px-3 py-2 rounded border border-slate-200 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-50"
+            disabled={selectedIds.length === 0}
+          >
+            💬 {t('sms')}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button className="px-3 py-2 rounded border border-slate-200 hover:bg-slate-50 flex items-center gap-2">
+            🧱 {t('columns')}
+          </button>
+          <input
+            className="border rounded px-3 py-2 w-64"
+            placeholder={t('searchNameEmailCarrier')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button className="px-3 py-2 rounded border border-slate-200 hover:bg-slate-50">
+            {t('moreFilters')}
+          </button>
+        </div>
+      </div>
+
       {/* Table */}
-      <div className="overflow-x-auto bg-white border rounded shadow-sm">
+      <div className="bg-white rounded-xl shadow-sm ring-1 ring-black/5 overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead className="bg-[#172A3A] text-white">
+          <thead className="bg-slate-50 text-slate-600">
             <tr>
-              {columnDefs
-                .filter(c => columns.includes(c.key))
-                .map(col => (
-                  <th key={col.key} className={`py-2 px-2 ${col.width || ""}`} style={{ minWidth: 50 }}>
-                    {col.key === "select" ? (
-                      <input
-                        type="checkbox"
-                        checked={selected.length === filteredClients.length && filteredClients.length > 0}
-                        onChange={handleSelectAll}
-                      />
-                    ) : (
-                      col.label
-                    )}
-                  </th>
-                ))}
+              <th className="px-4 py-2 w-10">
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && filtered.every((r) => selected[r.id])}
+                  onChange={(e) => {
+                    const all = {};
+                    if (e.target.checked) filtered.forEach((r) => (all[r.id] = true));
+                    setSelected(all);
+                  }}
+                />
+              </th>
+              <th className="px-4 py-2 text-left">{t('name')}</th>
+              <th className="px-4 py-2 text-left">{t('phone')}</th>
+              <th className="px-4 py-2 text-left">{t('email')}</th>
+              <th className="px-4 py-2 text-left">{t('carrier')}</th>
+              <th className="px-4 py-2 text-left">{t('plan')}</th>
+              <th className="px-4 py-2 text-left">{t('created')}</th>
+              <th className="px-4 py-2 text-right">{t('actions')}</th>
             </tr>
           </thead>
           <tbody>
-            {filteredClients.length === 0 && (
-              <tr>
-                <td colSpan={columns.length} className="py-8 text-center text-gray-400">
-                  No clients found.
-                </td>
-              </tr>
-            )}
-            {filteredClients.map(c => (
-              <tr key={c.id} className={`border-b ${c.unread ? "bg-blue-50" : ""} hover:bg-yellow-50`}>
-                {columns.includes("select") && (
-                  <td className="py-1 px-2">
+            {loading ? (
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-slate-500">{t('loading')}</td></tr>
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-slate-500">{t('noClients')}</td></tr>
+            ) : (
+              filtered.map((c) => (
+                <tr key={c.id} className="border-t hover:bg-slate-50">
+                  <td className="px-4 py-2">
                     <input
                       type="checkbox"
-                      checked={selected.includes(c.id)}
-                      onChange={() => handleSelect(c.id)}
+                      checked={!!selected[c.id]}
+                      onChange={(e) => setSelected((s) => ({ ...s, [c.id]: e.target.checked }))}
                     />
                   </td>
-                )}
-                {columns.includes("initials") && (
-                  <td className="py-1 px-2">
-                    <div className="w-7 h-7 rounded-full bg-[#172A3A] text-white flex items-center justify-center font-bold text-xs border-2 border-[#FFB800]">
-                      {c.initials}
-                    </div>
-                  </td>
-                )}
-                {columns.includes("name") && (
-                  <td className="py-1 px-2">
-                    <Link to={`/clients/${c.id}`} className="font-bold text-[#172A3A] hover:underline">
-                      {c.name}
+                  <td className="px-4 py-2">
+                    <Link to={`/clients/${c.id}`} className="text-blue-600 hover:underline">
+                      {c.firstName} {c.lastName}
                     </Link>
                   </td>
-                )}
-                {columns.includes("phone") && <td className="py-1 px-2">{c.phone}</td>}
-                {columns.includes("email") && (
-                  <td className="py-1 px-2 flex items-center gap-1">
-                    <Mail size={14} className="text-[#FFB800]" /> {c.email}
+                  <td className="px-4 py-2">{c.phone || "—"}</td>
+                  <td className="px-4 py-2">{c.email || "—"}</td>
+                  <td className="px-4 py-2">{c.carrier || "—"}</td>
+                  <td className="px-4 py-2">{c.plan || "—"}</td>
+                  <td className="px-4 py-2">
+                    {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "—"}
                   </td>
-                )}
-                {columns.includes("created") && <td className="py-1 px-2">{c.created}</td>}
-                {columns.includes("lastActivity") && <td className="py-1 px-2">{c.lastActivity}</td>}
-                {columns.includes("tags") && (
-                  <td className="py-1 px-2">
-                    <div className="flex flex-wrap gap-1">
-                      {c.tags.length === 0 ? (
-                        <span className="text-gray-300">—</span>
-                      ) : (
-                        c.tags.map(tag => (
-                          <span
-                            key={tag}
-                            className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                              TAG_COLORS[tag] || "bg-gray-100 text-gray-500"
-                            }`}
-                          >
-                            {tag}
-                          </span>
-                        ))
-                      )}
-                    </div>
+                  <td className="px-4 py-2 text-right">
+                    <button
+                      className="text-blue-600 hover:underline mr-3"
+                      onClick={() => { setEditRow(c); setShowForm(true); }}
+                    >
+                      {t('edit')}
+                    </button>
+                    <button
+                      className="text-red-600 hover:underline"
+                      onClick={() => setConfirmIds([c.id])}
+                    >
+                      {t('delete')}
+                    </button>
                   </td>
-                )}
-                {columns.includes("risk") && (
-                  <td className="py-1 px-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${RISK_COLORS[c.risk]}`}>
-                      {c.risk}
-                    </span>
-                  </td>
-                )}
-                {columns.includes("status") && (
-                  <td className="py-1 px-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${STATUS_COLORS[c.status]}`}>
-                      {c.status}
-                    </span>
-                  </td>
-                )}
-                {columns.includes("owner") && <td className="py-1 px-2">{c.owner}</td>}
-                {columns.includes("actions") && (
-                  <td className="py-1 px-2 text-right">
-                    <div className="flex gap-2">
-                      <Edit2 size={16} className="text-gray-500 hover:text-blue-800" />
-                      <Phone size={16} className="text-gray-500 hover:text-blue-800" />
-                      <MessageCircle size={16} className="text-gray-500 hover:text-blue-800" />
-                      <MoreHorizontal size={16} className="text-gray-500 hover:text-blue-800" />
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-4 text-xs text-gray-500">
-        <div> Total {filteredClients.length} record{filteredClients.length !== 1 && "s"} </div>
-        <div className="flex gap-1">
-          <button className="px-2 py-1 rounded hover:bg-gray-100">{"<"}</button>
-          <span>1</span>
-          <button className="px-2 py-1 rounded hover:bg-gray-100">{">"}</button>
+      {/* Error */}
+      {err && (
+        <div className="mt-3 bg-red-50 text-red-700 text-sm px-3 py-2 rounded border border-red-200">
+          {err}
         </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      {showForm && (
+        <Modal title={editRow ? t('editClient') : t('addClient')} onClose={() => { setShowForm(false); setEditRow(null); }}>
+          <ClientFormFull
+            initial={editRow}
+            saving={saving}
+            onCancel={() => { setShowForm(false); setEditRow(null); }}
+            onSave={async (form) => {
+              try {
+                setSaving(true);
+                if (editRow && editRow.id) {
+                  await updateClient(editRow.id, form);
+                } else {
+                  await addClient(form);
+                }
+                await load();
+                setShowForm(false);
+                setEditRow(null);
+              } catch (e) {
+                console.error(e);
+                alert(t('saveFailed'));
+              } finally {
+                setSaving(false);
+              }
+            }}
+          />
+        </Modal>
+      )}
+
+      {/* Delete confirm */}
+      {confirmIds && confirmIds.length > 0 && (
+        <Confirm
+          t={t}
+          loading={deleting}
+          text={confirmIds.length === 1
+            ? t('deleteThisClient')
+            : t('deleteMultipleClients', { count: confirmIds.length }) || `Delete ${confirmIds.length} clients?`}
+          onCancel={() => setConfirmIds(null)}
+          onConfirm={async () => {
+            setDeleting(true);
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const id of confirmIds) {
+              try {
+                await deleteClient(id);
+                successCount++;
+              } catch (err) {
+                failCount++;
+                console.error('[DELETE] Failed to delete client:', id, err);
+              }
+            }
+
+            setDeleting(false);
+            setConfirmIds(null);
+            setSelected({}); // Clear selection
+            await load();
+
+            if (failCount > 0) {
+              alert(t('deletePartialFail', { success: successCount, fail: failCount }) ||
+                `Deleted ${successCount} clients. ${failCount} failed.`);
+            }
+          }}
+        />
+      )}
+
+      {/* Footer: record count + pager hint (styling-only) */}
+      <div className="text-xs text-slate-500 mt-2">
+        {t('totalRecords', { count: rows.length })}
       </div>
-
-      {/* Add Client Modal (real POST) */}
-      {showAdd && (
-        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-2xl w-[420px] max-w-[95vw] p-6 relative">
-            <button className="absolute top-2 right-2 p-1 text-gray-400 hover:text-black" onClick={() => setShowAdd(false)}>
-              <X size={18} />
-            </button>
-            <h2 className="text-xl font-bold text-[#172A3A] mb-2">Add Client</h2>
-            <form className="space-y-2" onSubmit={saveNewClient}>
-              <div className="flex gap-2">
-                <input className="w-1/2 px-3 py-2 border rounded text-sm" placeholder="First name *"
-                       value={firstName} onChange={e => setFirstName(e.target.value)} required />
-                <input className="w-1/2 px-3 py-2 border rounded text-sm" placeholder="Last name *"
-                       value={lastName} onChange={e => setLastName(e.target.value)} required />
-              </div>
-              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Phone"
-                     value={phone} onChange={e => setPhone(e.target.value)} />
-              <input className="w-full px-3 py-2 border rounded text-sm" placeholder="Email"
-                     value={email} onChange={e => setEmail(e.target.value)} />
-              <textarea className="w-full px-3 py-2 border rounded text-sm" rows={3} placeholder="Notes"
-                        value={notes} onChange={e => setNotes(e.target.value)} />
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] font-bold py-2 rounded-xl shadow disabled:opacity-60"
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Import Modal (unchanged/demo) */}
-      {showImport && (
-        <div className="fixed inset-0 z-40 bg-black/30 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-2xl w-[430px] max-w-[98vw] p-6 relative">
-            <button className="absolute top-2 right-2 p-1 text-gray-400 hover:text-black" onClick={() => setShowImport(false)}>
-              <X size={18} />
-            </button>
-            <h2 className="text-xl font-bold text-[#172A3A] mb-3">Import Clients</h2>
-            <p className="text-gray-500 text-xs mb-4">Upload a CSV; mapping not implemented.</p>
-            <input type="file" accept=".csv" ref={fileInput} onChange={() => setShowImport(false)} className="mb-2" />
-            <button
-              className="w-full bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] px-4 py-2 rounded-xl font-bold shadow transition"
-              onClick={() => fileInput.current && fileInput.current.click()}
-            >
-              Select CSV File
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
-};
-
-export default Clients;
+}

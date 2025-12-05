@@ -1,384 +1,417 @@
-// /frontend/src/pages/Tasks.jsx
+// src/pages/Tasks.jsx  (wording: "All Tasks" & "My Tasks")
+import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import React, { useState } from "react";
-import {
-  Plus,
-  CheckCircle2,
-  Trash2,
-  Table2,
-  Filter,
-  Search,
-  User2,
-  Phone,
-  MessageCircle,
-  CalendarClock,
-  MoreHorizontal,
-  Mail,
-} from "lucide-react";
-
-const DEMO_TASKS = [
-  {
-    id: 1,
-    status: "dueToday",
-    type: "call",
-    title: "Call client for policy review",
-    description: "Annual review—remind client about new plan options.",
-    contact: "Jane Doe",
-    dueDate: "2025-08-07",
-    dueTime: "10:00",
-    priority: "High",
-    assigned: ["Scott Fluegel", "Spencer"],
-    complete: false,
-  },
-  {
-    id: 2,
-    status: "dueToday",
-    type: "sms",
-    title: "Send happy birthday SMS",
-    description: "",
-    contact: "Zain Marketing",
-    dueDate: "2025-08-07",
-    dueTime: "09:30",
-    priority: "Low",
-    assigned: ["Scott Fluegel"],
-    complete: false,
-  },
-  {
-    id: 3,
-    status: "upcoming",
-    type: "email",
-    title: "Complete SOA for Janik",
-    description: "",
-    contact: "Janik Lilienthal",
-    dueDate: "2025-08-08",
-    dueTime: "15:00",
-    priority: "Medium",
-    assigned: ["Cherie Fluegel"],
-    complete: false,
-  },
-  {
-    id: 4,
-    status: "overdue",
-    type: "call",
-    title: "Check-in call: new Rx alert",
-    description: "Lisinopril prescribed, tier 4. Discuss with client.",
-    contact: "Scott Fluegel",
-    dueDate: "2025-08-05",
-    dueTime: "16:00",
-    priority: "High",
-    assigned: ["Spencer"],
-    complete: false,
-  },
-];
-
-const PRIORITY_COLORS = {
-  High: "bg-red-100 text-red-700",
-  Medium: "bg-yellow-100 text-yellow-700",
-  Low: "bg-green-100 text-green-700",
+// ---------- tiny API helpers (self-contained) ----------
+const BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
+const authHeaders = () => {
+  const t = localStorage.getItem("token");
+  return t ? { Authorization: `Bearer ${t}` } : {};
 };
+async function j(method, url, body) {
+  const res = await fetch(`${BASE}${url}`, {
+    method,
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`${method} ${url} -> ${res.status} ${await res.text()}`);
+  return res.json();
+}
+const listAll = (params = {}) => j("GET", `/tasks/all${qs(params)}`);   // All Tasks = My + Client-linked
+const listMine = (params = {}) => j("GET", `/tasks${qs(params)}`);      // My Tasks only (not linked to a client)
+const summary = () => j("GET", "/tasks/summary");
+const patchMine = (id, p) => j("PATCH", `/tasks/${id}`, p);
+const delMine = (id) => j("DELETE", `/tasks/${id}`);
+const createMine = (p) => j("POST", "/tasks", p);
+const createClient = (cid, p) => j("POST", `/tasks/clients/${cid}`, p);
+const patchClient = (cid, tid, p) => j("PATCH", `/tasks/clients/${cid}/${tid}`, p);
+const getClients = () => j("GET", "/clients");
+function qs(o) {
+  const q = new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([,v]) => v!=null && v!==""))).toString();
+  return q ? `?${q}` : "";
+}
 
-const TYPE_ICONS = {
-  call: <Phone size={16} className="text-green-500" />,
-  sms: <MessageCircle size={16} className="text-blue-500" />,
-  email: <Mail size={16} className="text-pink-600" />,
-  calendar: <CalendarClock size={16} className="text-purple-500" />,
-};
+// ---------- date helpers ----------
+const startOfDay = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+const sameDay = (a, b) => startOfDay(a).getTime() === startOfDay(b).getTime();
 
-const SECTION_LABELS = {
-  overdue: "Overdue",
-  dueToday: "Due Today",
-  upcoming: "Upcoming",
-};
+// ---------- small UI atoms ----------
+const Pill = ({ active, onClick, children }) => (
+  <button
+    className={`px-3 py-1 rounded-full border text-sm ${active ? "bg-black text-white" : "bg-white hover:bg-gray-50"}`}
+    onClick={onClick}
+  >
+    {children}
+  </button>
+);
 
-const Tasks = () => {
-  const [tasks, setTasks] = useState(DEMO_TASKS);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [showColumns, setShowColumns] = useState(false);
-
-  const columns = [
-    { key: "select", label: "" },
-    { key: "type", label: "" },
-    { key: "title", label: "Task" },
-    { key: "contact", label: "Contact" },
-    { key: "dueDate", label: "Due" },
-    { key: "priority", label: "Priority" },
-    { key: "assigned", label: "Assigned" },
-    { key: "actions", label: "" },
-  ];
-
-  const [visibleCols, setVisibleCols] = useState(columns.map(c => c.key));
-
-  // Filter/search
-  const filteredTasks = tasks.filter(
-    t =>
-      (filter === "all" || t.status === filter) &&
-      (search === "" ||
-        t.title.toLowerCase().includes(search.toLowerCase()) ||
-        t.contact.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  // Group by section (Overdue always first)
-  const sections = [
-    {
-      key: "overdue",
-      tasks: filteredTasks.filter(t => t.status === "overdue"),
-    },
-    {
-      key: "dueToday",
-      tasks: filteredTasks.filter(t => t.status === "dueToday"),
-    },
-    {
-      key: "upcoming",
-      tasks: filteredTasks.filter(t => t.status === "upcoming"),
-    },
-  ];
-
-  // Column toggler
-  const handleToggleCol = key => {
-    setVisibleCols(cols =>
-      cols.includes(key)
-        ? cols.filter(c => c !== key)
-        : [...cols, key]
-    );
-  };
-
+function Row({ task, selected, onSelect, onToggle, onDelete, t }) {
+  const due = task.dueDate ? new Date(task.dueDate) : null;
+  const readOnly = !!task.clientId; // My Tasks editable here; client-linked tasks edited on the Client Profile
   return (
-    <div>
-      <div className="mb-2">
-        <h1 className="text-3xl font-extrabold text-[#172A3A]">Tasks</h1>
-        <div className="text-gray-500 mb-3">
-          Track, manage, and complete your upcoming activities.
-        </div>
-        <div className="flex items-center gap-2 mb-4">
-          <button
-            className={`px-3 py-1 rounded font-semibold text-sm ${
-              filter === "all"
-                ? "bg-[#FFB800] text-[#172A3A]"
-                : "bg-white text-gray-700 border"
-            }`}
-            onClick={() => setFilter("all")}
-          >
-            All
-          </button>
-          <button
-            className={`px-3 py-1 rounded font-semibold text-sm ${
-              filter === "dueToday"
-                ? "bg-[#FFB800] text-[#172A3A]"
-                : "bg-white text-gray-700 border"
-            }`}
-            onClick={() => setFilter("dueToday")}
-          >
-            Due Today
-          </button>
-          <button
-            className={`px-3 py-1 rounded font-semibold text-sm ${
-              filter === "upcoming"
-                ? "bg-[#FFB800] text-[#172A3A]"
-                : "bg-white text-gray-700 border"
-            }`}
-            onClick={() => setFilter("upcoming")}
-          >
-            Upcoming
-          </button>
-          <button
-            className={`px-3 py-1 rounded font-semibold text-sm ${
-              filter === "overdue"
-                ? "bg-[#FFB800] text-[#172A3A]"
-                : "bg-white text-gray-700 border"
-            }`}
-            onClick={() => setFilter("overdue")}
-          >
-            Overdue
-          </button>
-          <button
-            className={`px-3 py-1 rounded font-semibold text-sm`}
-            onClick={() => setFilter("completed")}
-            disabled
-          >
-            Completed
-          </button>
-          <div className="ml-auto flex gap-2">
-            <button
-              className="flex items-center gap-1 border px-3 py-1 rounded shadow-sm bg-white text-sm"
-              onClick={() => setShowColumns(v => !v)}
-            >
-              <Table2 size={16} /> Columns
-            </button>
-            <div className="relative">
-              <Search size={16} className="absolute left-2 top-2 text-gray-400" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-8 pr-2 py-1 rounded border text-sm w-44"
-                placeholder="Search tasks..."
-              />
-            </div>
-            <button className="flex items-center gap-1 border px-3 py-1 rounded shadow-sm bg-white text-sm" disabled>
-              <Filter size={16} /> Filters
-            </button>
-            <button className="bg-[#FFB800] hover:bg-yellow-400 text-[#172A3A] px-4 py-2 font-bold rounded-lg shadow-sm flex items-center gap-2">
-              <Plus size={18} /> Add Task
-            </button>
-            <button className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 font-bold rounded-lg shadow-sm flex items-center gap-2">
-              <CheckCircle2 size={18} /> Complete
-            </button>
-            <button className="bg-white hover:bg-gray-100 text-red-600 px-4 py-2 font-bold rounded-lg shadow-sm flex items-center gap-2 border">
-              <Trash2 size={18} /> Delete
-            </button>
-          </div>
-        </div>
-        {/* Column chooser */}
-        {showColumns && (
-          <div className="absolute right-10 top-32 bg-white border shadow-lg rounded p-4 z-20">
-            <div className="font-bold mb-2">Show Columns</div>
-            {columns.map(col => (
-              <label key={col.key} className="flex items-center gap-2 mb-1 text-sm">
-                <input
-                  type="checkbox"
-                  checked={visibleCols.includes(col.key)}
-                  disabled={["select", "title", "actions"].includes(col.key)}
-                  onChange={() => handleToggleCol(col.key)}
-                />
-                {col.label || col.key}
-              </label>
-            ))}
-          </div>
-        )}
+    <div className="grid grid-cols-12 items-center gap-3 px-3 py-3 bg-white">
+      <div className="col-span-1 flex items-center gap-2">
+        <input type="checkbox" className="w-4 h-4" checked={selected} onChange={() => onSelect(task)} />
+        <button
+          className={`w-4 h-4 rounded-full border ${task.status === "done" ? "bg-black" : "bg-white"} ${readOnly ? "opacity-40 cursor-not-allowed" : ""}`}
+          title={readOnly ? t('clientLinkedTasksNote') : t('toggleDone')}
+          onClick={() => !readOnly && onToggle(task)}
+          disabled={readOnly}
+        />
       </div>
-
-      {/* Tasks Sections */}
-      <div>
-        {sections.map(
-          section =>
-            section.tasks.length > 0 && (
-              <div key={section.key} className="mb-8">
-                <div
-                  className={`flex items-center text-lg font-bold mb-1 ${
-                    section.key === "dueToday"
-                      ? "text-yellow-700"
-                      : section.key === "overdue"
-                      ? "text-red-600"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {section.key === "dueToday" && <span className="mr-1">⭐</span>}
-                  {section.key === "overdue" && <span className="mr-1">⏺️</span>}
-                  {SECTION_LABELS[section.key]}{" "}
-                  <span className="ml-1 text-sm font-normal text-gray-400">
-                    {section.tasks.length} task{section.tasks.length !== 1 && "s"}
-                  </span>
-                </div>
-                <div className="overflow-x-auto rounded-2xl shadow bg-white">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        {columns
-                          .filter(c => visibleCols.includes(c.key))
-                          .map(col => (
-                            <th key={col.key} className="px-3 py-2 font-bold text-left">
-                              {col.label}
-                            </th>
-                          ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {section.tasks.map(task => (
-                        <tr
-                          key={task.id}
-                          className={
-                            section.key === "dueToday"
-                              ? "bg-yellow-50 border-b"
-                              : section.key === "overdue"
-                              ? "bg-red-50 border-b"
-                              : "border-b"
-                          }
-                        >
-                          {/* Select */}
-                          {visibleCols.includes("select") && (
-                            <td className="px-3 py-2">
-                              <input type="checkbox" />
-                            </td>
-                          )}
-                          {/* Type/Icon */}
-                          {visibleCols.includes("type") && (
-                            <td className="px-3 py-2">
-                              {TYPE_ICONS[task.type] || <User2 size={16} />}
-                            </td>
-                          )}
-                          {/* Title/description */}
-                          {visibleCols.includes("title") && (
-                            <td className="px-3 py-2">
-                              <div className="font-semibold">{task.title}</div>
-                              {task.description && (
-                                <div className="text-xs text-gray-500">
-                                  {task.description}
-                                </div>
-                              )}
-                            </td>
-                          )}
-                          {/* Contact */}
-                          {visibleCols.includes("contact") && (
-                            <td className="px-3 py-2">{task.contact}</td>
-                          )}
-                          {/* Due Date */}
-                          {visibleCols.includes("dueDate") && (
-                            <td className="px-3 py-2">
-                              {task.dueDate}
-                              {task.dueTime && (
-                                <span className="text-xs text-gray-400 ml-2">
-                                  {task.dueTime}
-                                </span>
-                              )}
-                            </td>
-                          )}
-                          {/* Priority */}
-                          {visibleCols.includes("priority") && (
-                            <td className="px-3 py-2">
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-xs font-bold ${PRIORITY_COLORS[task.priority]}`}
-                              >
-                                {task.priority}
-                              </span>
-                            </td>
-                          )}
-                          {/* Assigned */}
-                          {visibleCols.includes("assigned") && (
-                            <td className="px-3 py-2">
-                              {task.assigned &&
-                                task.assigned.map((a, i) => (
-                                  <span
-                                    key={a}
-                                    className={`inline-block mr-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                      i === 0
-                                        ? "bg-blue-100 text-blue-800"
-                                        : "bg-gray-100 text-gray-700"
-                                    }`}
-                                  >
-                                    {a}
-                                  </span>
-                                ))}
-                            </td>
-                          )}
-                          {/* Actions */}
-                          {visibleCols.includes("actions") && (
-                            <td className="px-3 py-2">
-                              <button className="hover:bg-gray-100 rounded p-1">
-                                <MoreHorizontal size={16} />
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
+      <div className="col-span-5">
+        <div className={`font-medium ${task.status === "done" ? "line-through text-gray-500" : ""}`}>{task.title}</div>
+        <div className="text-xs text-gray-500">
+          {task.clientId ? (task.clientName ? `${t('client')}: ${task.clientName}` : t('clientLinked')) : t('myTask')}
+        </div>
+        {task.notes ? <div className="text-sm text-gray-500">{task.notes}</div> : null}
+      </div>
+      <div className="col-span-2 text-sm">
+        <span className={`px-2 py-1 text-xs rounded-full border ${task.priority === "high" ? "bg-red-50 border-red-200" : task.priority === "low" ? "bg-gray-50" : "bg-blue-50 border-blue-200"}`}>
+          {t(task.priority || "normal")}
+        </span>
+      </div>
+      <div className="col-span-2 text-sm">{due ? due.toLocaleString() : <span className="text-gray-400">—</span>}</div>
+      <div className="col-span-2 text-right">
+        {!task.clientId && (
+          <button className="px-3 py-1 rounded-xl hover:bg-gray-100" onClick={() => onDelete(task)}>
+            {t('delete')}
+          </button>
         )}
       </div>
     </div>
   );
-};
+}
 
-export default Tasks;
+// ---------- simple modal (self-contained) ----------
+function Modal({ open, title, children, onClose, onSave, t }) {
+  const [saving, setSaving] = useState(false);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
+        <div className="font-bold text-lg mb-2">{title}</div>
+        <div className="mb-4">{children}</div>
+        <div className="flex justify-end gap-2">
+          <button className="px-4 py-2 rounded-xl" onClick={onClose} disabled={saving}>{t('cancel')}</button>
+          <button
+            className="px-4 py-2 rounded-xl bg-black text-white disabled:opacity-60"
+            onClick={async () => { setSaving(true); await onSave(); setSaving(false); }}
+            disabled={saving}
+          >
+            {t('save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===================================================
+//                    MAIN ROUTE
+// ===================================================
+export default function Tasks() {
+  const { t } = useTranslation();
+  const [scope, setScope] = useState("all"); // "all" (All Tasks) or "mine" (My Tasks only)
+  const [tab, setTab] = useState("all");     // all | dueToday | upcoming | overdue | completed
+  const [query, setQuery] = useState("");
+  const [items, setItems] = useState([]);
+  const [summaryData, setSummaryData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [clients, setClients] = useState([]);
+
+  const now = new Date();
+
+  // Load clients for dropdown
+  useEffect(() => {
+    async function loadClients() {
+      try {
+        const res = await getClients();
+        setClients(res.data || []);
+      } catch (err) {
+        console.error('Failed to load clients:', err);
+      }
+    }
+    loadClients();
+  }, []);
+
+  async function refresh() {
+    setLoading(true);
+    try {
+      const params = { q: query || "" };
+      const res = scope === "all" ? await listAll(params) : await listMine(params);
+      setItems(res.data || []);
+      try { const s = await summary(); setSummaryData(s.data); } catch {}
+      setSelected([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refresh();
+    const onAnyTaskChange = () => refresh();
+    window.addEventListener("tasks:update", onAnyTaskChange);
+    return () => window.removeEventListener("tasks:update", onAnyTaskChange);
+  }, [scope]);
+
+  const filtered = useMemo(() => {
+    if (!query) return items;
+    const s = query.toLowerCase();
+    return items.filter((t) =>
+      (t.title || "").toLowerCase().includes(s) ||
+      (t.notes || "").toLowerCase().includes(s) ||
+      (t.status || "").toLowerCase().includes(s) ||
+      (t.priority || "").toLowerCase().includes(s) ||
+      (t.clientName || "").toLowerCase().includes(s)
+    );
+  }, [items, query]);
+
+  const buckets = useMemo(() => {
+    const overdue = [], dueToday = [], upcoming = [], completed = [];
+    for (const t of filtered) {
+      if (t.status === "done") { completed.push(t); continue; }
+      if (!t.dueDate) { upcoming.push(t); continue; }
+      const d = new Date(t.dueDate);
+      if (d < startOfDay(now)) overdue.push(t);
+      else if (sameDay(d, now)) dueToday.push(t);
+      else upcoming.push(t);
+    }
+    return { overdue, dueToday, upcoming, completed };
+  }, [filtered]);
+
+  function visibleRows() {
+    if (tab === "overdue") return buckets.overdue;
+    if (tab === "dueToday") return buckets.dueToday;
+    if (tab === "upcoming") return buckets.upcoming;
+    if (tab === "completed") return buckets.completed;
+    return filtered;
+  }
+
+  function toggleSelect(task) {
+    setSelected((cur) =>
+      cur.find((x) => x.id === task.id) ? cur.filter((x) => x.id !== task.id) : [...cur, task]
+    );
+  }
+
+  async function toggleDone(task) {
+    if (task.clientId) {
+      await patchClient(task.clientId, task.id, { status: task.status === "done" ? "todo" : "done" });
+    } else {
+      await patchMine(task.id, { status: task.status === "done" ? "todo" : "done" });
+    }
+    window.dispatchEvent(new CustomEvent("tasks:update"));
+  }
+
+  async function bulkComplete() {
+    for (const t of selected) {
+      if (t.status !== "done") {
+        if (t.clientId) await patchClient(t.clientId, t.id, { status: "done" });
+        else await patchMine(t.id, { status: "done" });
+      }
+    }
+    window.dispatchEvent(new CustomEvent("tasks:update"));
+  }
+
+  async function deleteOne(task) {
+    if (task.clientId) return; // keep client-linked tasks immutable here
+    await delMine(task.id);
+    window.dispatchEvent(new CustomEvent("tasks:update"));
+  }
+
+  // ---- create task modal state ----
+  const [newTask, setNewTask] = useState({ title: "", notes: "", priority: "normal", dueDate: "", clientId: "" });
+  async function saveNewTask() {
+    const payload = {
+      title: newTask.title.trim(),
+      notes: newTask.notes.trim(),
+      priority: newTask.priority,
+      dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
+    };
+    if (!payload.title) return;
+
+    // Create client task or global task based on clientId selection
+    if (newTask.clientId) {
+      await createClient(newTask.clientId, payload);
+    } else {
+      await createMine(payload);
+    }
+
+    setCreateOpen(false);
+    setNewTask({ title: "", notes: "", priority: "normal", dueDate: "", clientId: "" });
+    window.dispatchEvent(new CustomEvent("tasks:update"));
+  }
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-bold">{t('tasks')}</h1>
+          {summaryData && (
+            <div className="mt-1 text-sm text-gray-600">
+              {t('allTasksSummary', { all: summaryData.all.total, mine: summaryData.global.total })}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            className={`px-4 py-2 rounded-2xl border ${scope === "all" ? "bg-black text-white" : "bg-white"}`}
+            onClick={() => setScope("all")}
+          >
+            {t('allTasks')}
+          </button>
+          <button
+            className={`px-4 py-2 rounded-2xl border ${scope === "mine" ? "bg-black text-white" : "bg-white"}`}
+            onClick={() => setScope("mine")}
+          >
+            {t('myTasksOnly')}
+          </button>
+          <button
+            className="px-4 py-2 rounded-2xl bg-black text-white"
+            onClick={() => setCreateOpen(true)}
+            title="Creates a task not linked to a client"
+          >
+            + {t('addTask')}
+          </button>
+          <button className="px-4 py-2 rounded-2xl border" onClick={bulkComplete} disabled={selected.length === 0}>
+            {t('complete')}
+          </button>
+          <button className="px-4 py-2 rounded-2xl border" onClick={() => setSelected([])} disabled={selected.length === 0}>
+            {t('clear')}
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs & search */}
+      <div className="flex items-center gap-2 mb-3">
+        <Pill active={tab === "all"} onClick={() => setTab("all")}>{t('all')}</Pill>
+        <Pill active={tab === "dueToday"} onClick={() => setTab("dueToday")}>{t('dueToday')}</Pill>
+        <Pill active={tab === "upcoming"} onClick={() => setTab("upcoming")}>{t('upcoming')}</Pill>
+        <Pill active={tab === "overdue"} onClick={() => setTab("overdue")}>{t('overdue')}</Pill>
+        <Pill active={tab === "completed"} onClick={() => setTab("completed")}>{t('completed')}</Pill>
+        <div className="ml-auto">
+          <input
+            className="border rounded-2xl px-3 py-2 w-64"
+            placeholder={t('searchTasks')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && refresh()}
+          />
+        </div>
+      </div>
+
+      {/* Grouped sections when tab=All */}
+      {loading ? (
+        <div className="text-gray-500">{t('loading')}</div>
+      ) : tab === "all" ? (
+        <div className="space-y-6">
+          <Section tone="red" title={t('overdue')} count={buckets.overdue.length} t={t}>
+            {buckets.overdue.map((task) => (
+              <Row key={task.id} task={task} selected={!!selected.find(x=>x.id===task.id)} onSelect={toggleSelect} onToggle={toggleDone} onDelete={deleteOne} t={t} />
+            ))}
+          </Section>
+          <Section tone="yellow" title={t('dueToday')} count={buckets.dueToday.length} t={t}>
+            {buckets.dueToday.map((task) => (
+              <Row key={task.id} task={task} selected={!!selected.find(x=>x.id===task.id)} onSelect={toggleSelect} onToggle={toggleDone} onDelete={deleteOne} t={t} />
+            ))}
+          </Section>
+          <Section tone="gray" title={t('upcoming')} count={buckets.upcoming.length} t={t}>
+            {buckets.upcoming.map((task) => (
+              <Row key={task.id} task={task} selected={!!selected.find(x=>x.id===task.id)} onSelect={toggleSelect} onToggle={toggleDone} onDelete={deleteOne} t={t} />
+            ))}
+          </Section>
+          <Section tone="green" title={t('completed')} count={buckets.completed.length} t={t}>
+            {buckets.completed.map((task) => (
+              <Row key={task.id} task={task} selected={!!selected.find(x=>x.id===task.id)} onSelect={toggleSelect} onToggle={toggleDone} onDelete={deleteOne} t={t} />
+            ))}
+          </Section>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {(() => {
+            const visible =
+              tab === "overdue" ? buckets.overdue :
+              tab === "dueToday" ? buckets.dueToday :
+              tab === "upcoming" ? buckets.upcoming :
+              tab === "completed" ? buckets.completed : filtered;
+            return visible.length === 0 ? (
+              <div className="text-gray-500">{t('noTasksMatch')}</div>
+            ) : (
+              visible.map((task) => (
+                <Row key={task.id} task={task} selected={!!selected.find(x=>x.id===task.id)} onSelect={toggleSelect} onToggle={toggleDone} onDelete={deleteOne} t={t} />
+              ))
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Create Task */}
+      <Modal open={createOpen} title={newTask.clientId ? t('newClientTask') : t('newTask')} onClose={() => setCreateOpen(false)} onSave={saveNewTask} t={t}>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('linkToClient')}</label>
+            <select
+              className="border rounded-xl px-3 py-2 w-full"
+              value={newTask.clientId}
+              onChange={(e)=>setNewTask(v=>({...v,clientId:e.target.value}))}
+            >
+              <option value="">{t('noClientPersonalTask')}</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName} {c.email ? `(${c.email})` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {newTask.clientId ? t('taskLinkedToClient') : t('personalTaskNotLinked')}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">{t('title')}</label>
+            <input className="border rounded-xl px-3 py-2 w-full" value={newTask.title} onChange={(e)=>setNewTask(v=>({...v,title:e.target.value}))}/>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">{t('notes')}</label>
+            <textarea className="border rounded-xl px-3 py-2 w-full" rows={3} value={newTask.notes} onChange={(e)=>setNewTask(v=>({...v,notes:e.target.value}))}/>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium">{t('priority')}</label>
+              <select className="border rounded-xl px-3 py-2 w-full" value={newTask.priority} onChange={(e)=>setNewTask(v=>({...v,priority:e.target.value}))}>
+                <option value="low">{t('low')}</option>
+                <option value="normal">{t('normal')}</option>
+                <option value="high">{t('high')}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium">{t('due')}</label>
+              <input type="datetime-local" className="border rounded-xl px-3 py-2 w-full" value={newTask.dueDate}
+                onChange={(e)=>setNewTask(v=>({...v,dueDate:e.target.value}))}/>
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ---------- Section wrapper ----------
+function Section({ title, count, tone, children, t }) {
+  const tones = {
+    red: "bg-red-50 border-red-200",
+    yellow: "bg-yellow-50 border-yellow-200",
+    gray: "bg-gray-50 border-gray-200",
+    green: "bg-green-50 border-green-200",
+  };
+  return (
+    <div>
+      <div className="font-semibold mb-2 flex items-center gap-2">
+        {title} <span className="text-gray-500 text-sm">{count ? t('tasksCount', { count }) : ""}</span>
+      </div>
+      <div className={`rounded-2xl border ${tones[tone] || "bg-white border-gray-200"}`}>{children}</div>
+    </div>
+  );
+}
