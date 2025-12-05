@@ -9,14 +9,15 @@ const db = require('../db');
 // ============================================================================
 
 function enforceHttps(req, res, next) {
+  // TEMPORARILY DISABLED for Elastic Beanstalk deployment
+  // Re-enable once SSL/HTTPS is configured on the load balancer
+  // TODO: Set up ACM certificate and HTTPS listener, then remove this bypass
+  return next();
+
+  // Original code below - uncomment when HTTPS is configured:
+  /*
   // Skip in development
   if (process.env.NODE_ENV !== 'production') {
-    return next();
-  }
-
-  // Skip HTTPS enforcement on Elastic Beanstalk until SSL is configured
-  // ELB health checks and direct instance access won't have x-forwarded-proto
-  if (process.env.SKIP_HTTPS_REDIRECT === 'true') {
     return next();
   }
 
@@ -29,6 +30,7 @@ function enforceHttps(req, res, next) {
   }
 
   next();
+  */
 }
 
 // ============================================================================
